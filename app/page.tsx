@@ -2,172 +2,165 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import ChatTifa from "@/components/ChatTifa";
 
-interface Song {
-  title: string;
-  artist: string;
+interface PlaylistItem {
+  name?: string;
+  title?: string;
+  url: string;
 }
 
 export default function Home() {
-  const [vibe, setVibe] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
-  const [playlist, setPlaylist] = useState<Song[]>([]);
-  const [mood, setMood] = useState<string>("Focused");
-  const [voiceUrl, setVoiceUrl] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [mood, setMood] = useState("");
+  const [vibe, setVibe] = useState("");
+  const [spotify, setSpotify] = useState<PlaylistItem[]>([]);
+  const [youtube, setYoutube] = useState<PlaylistItem[]>([]);
+  const [audio, setAudio] = useState<string | null>(null);
 
-  // ==================================================
-  // Fetch Vibe (Qwen3)
-  // ==================================================
   useEffect(() => {
-    async function fetchVibe() {
+    async function fetchToday() {
       try {
-        const res = await fetch("/api/vibe");
+        const res = await fetch("/api/today");
         const data = await res.json();
-        console.log("🎯 vibe data:", data);
+        console.log("🎯 Today data:", data);
 
-        const newVibe = data.vibe || "Stay calm and trade with confidence 💫";
-        setVibe(newVibe);
-
-        // Gọi API Piper để tạo voice
-        const voiceRes = await fetch(
-          `/api/voice?text=${encodeURIComponent(newVibe)}`
+        setMood(data.mood || "focused");
+        setVibe(
+          data.vibe ||
+            "Stay calm and trade with confidence 💫"
         );
-        const voiceData = await voiceRes.json();
-        if (voiceData.audio) {
-          const audioBlob = b64toBlob(voiceData.audio, "audio/wav");
-          const audioUrl = URL.createObjectURL(audioBlob);
-          setVoiceUrl(audioUrl);
+        setSpotify(data.spotify || []);
+        setYoutube(data.youtube || []);
+        setAudio(data.audio || null);
 
-          // ✅ Phát giọng nói tự động
-          const audio = new Audio(audioUrl);
-          audio.play().catch((err) =>
-            console.warn("⚠️ Auto-play blocked by browser:", err)
+        // 🔊 Auto-play Piper voice
+        if (data.audio) {
+          const audioBlob = b64toBlob(data.audio, "audio/wav");
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const player = new Audio(audioUrl);
+          player.play().catch((err) =>
+            console.warn("⚠️ Auto-play blocked:", err)
           );
         }
       } catch (err) {
-        console.error("❌ Error fetching vibe or voice:", err);
-        setVibe("Stay calm and trade with confidence 💫");
+        console.error("❌ Failed to fetch /api/today:", err);
       } finally {
         setLoading(false);
       }
     }
-
-    fetchVibe();
+    fetchToday();
   }, []);
 
-  // ==================================================
-  // Fetch Music (Gemma3)
-  // ==================================================
-  useEffect(() => {
-    async function fetchMusic() {
-      try {
-        const res = await fetch("/api/music");
-        const data = await res.json();
-        setPlaylist(data.playlist || []);
-      } catch (err) {
-        console.error("❌ Error fetching music:", err);
-      }
-    }
-
-    fetchMusic();
-  }, [mood]);
-
-  // ==================================================
   // Helper: Base64 → Blob
-  // ==================================================
-  function b64toBlob(b64Data: string, contentType = "", sliceSize = 512) {
+  function b64toBlob(b64Data: string, contentType = "audio/wav") {
     const byteCharacters = atob(b64Data);
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      const slice = byteCharacters.slice(offset, offset + sliceSize);
-      const byteNumbers = new Array(slice.length);
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
-    }
-    return new Blob(byteArrays, { type: contentType });
+    const byteNumbers = Array.from(byteCharacters, (c) => c.charCodeAt(0));
+    return new Blob([new Uint8Array(byteNumbers)], { type: contentType });
   }
 
-  // ==================================================
-  // UI RENDER
-  // ==================================================
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-gray-100">
+    <main className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-gray-100 px-4 overflow-hidden">
       <motion.h1
-        className="text-5xl font-extrabold mb-6 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent"
+        className="text-5xl font-extrabold mb-6 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent text-center"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         TradeVibe 🎧
       </motion.h1>
 
-      {/* Vibe Section */}
-      <div className="text-center mb-6 px-4">
-        {loading ? (
-          <p className="text-gray-400 animate-pulse">Loading...</p>
-        ) : (
-          <motion.p
-            key={vibe}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-lg text-gray-200 italic leading-relaxed"
-          >
-            {vibe}
-          </motion.p>
-        )}
-      </div>
+      {loading ? (
+        <p className="text-gray-400 animate-pulse text-center">
+          Loading today’s vibe...
+        </p>
+      ) : (
+        <>
+          {/* Mood + Vibe */}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-semibold text-pink-400 mb-2">
+              Mood Today:{" "}
+              {mood.charAt(0).toUpperCase() + mood.slice(1)}{" "}
+              {mood === "happy" ? "💖" : mood === "focused" ? "🧠" : "🎵"}
+            </h2>
 
-      {/* Voice Player */}
-      {voiceUrl && (
-        <audio
-          controls
-          autoPlay
-          className="mb-10"
-          src={voiceUrl}
-        >
-          Your browser does not support audio playback.
-        </audio>
-      )}
-
-      {/* Mood Buttons */}
-      <div className="flex gap-3 mb-8">
-        {["Focused", "Tired", "Anxious", "Confident", "Happy"].map((m) => (
-          <button
-            key={m}
-            onClick={() => setMood(m)}
-            className={`px-4 py-2 rounded-full border ${
-              mood === m
-                ? "bg-pink-500 text-white"
-                : "border-gray-600 text-gray-300 hover:bg-gray-800"
-            }`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-      {/* Playlist Section */}
-      <div className="text-center w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-3 text-blue-300">
-          {mood} Mood Playlist 🎵
-        </h2>
-        {playlist.map((song) => (
-          <div
-            key={song.title}
-            className="flex justify-between py-2 px-4 bg-gray-800 rounded-lg mb-2 text-sm"
-          >
-            <span>{song.title}</span>
-            <span className="text-gray-400">{song.artist}</span>
+            <motion.p
+              key={vibe}
+              className="text-lg italic text-gray-200 leading-relaxed max-w-2xl mx-auto whitespace-pre-line"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {vibe}
+            </motion.p>
           </div>
-        ))}
-      </div>
 
-      <p className="text-sm mt-10 text-gray-500">
-        Powered by Qwen3 🧠 + Gemma3 🎵 + Piper 🎙️
-      </p>
+          {audio && (
+            <audio
+              controls
+              autoPlay
+              className="my-6 w-80"
+              src={URL.createObjectURL(b64toBlob(audio, "audio/wav"))}
+            >
+              Your browser does not support audio playback.
+            </audio>
+          )}
+
+          {/* Spotify */}
+          {spotify.length > 0 && (
+            <div className="w-full max-w-2xl mt-6">
+              <h3 className="text-xl font-semibold text-green-400 mb-3 text-center">
+                Spotify Playlist 🎵
+              </h3>
+              {spotify.slice(0, 1).map((s) => {
+                const id = s.url.split("/playlist/")[1];
+                return (
+                  <iframe
+                    key={id}
+                    src={`https://open.spotify.com/embed/playlist/${id}`}
+                    width="100%"
+                    height="380"
+                    allow="encrypted-media"
+                    className="rounded-xl shadow-lg"
+                  ></iframe>
+                );
+              })}
+            </div>
+          )}
+
+          {/* YouTube */}
+          {youtube.length > 0 && (
+            <div className="w-full max-w-2xl mt-10">
+              <h3 className="text-xl font-semibold text-red-400 mb-3 text-center">
+                YouTube Playlist 📺
+              </h3>
+              {youtube.slice(0, 1).map((y) => {
+                const vid = new URL(y.url).searchParams.get("v");
+                return (
+                  <div key={vid} className="aspect-video mb-4">
+                    <iframe
+                      width="100%"
+                      height="315"
+                      src={`https://www.youtube.com/embed/${vid}`}
+                      title={y.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="rounded-xl shadow-lg"
+                    ></iframe>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="text-sm mt-10 text-gray-500 text-center">
+            Powered by Qwen3 🧠 + Gemma3 🎵 + Piper 🎙️
+          </p>
+
+          {/* 💬 Chatbot Tifa — synced mood */}
+          <ChatTifa mood={mood} />
+        </>
+      )}
     </main>
   );
 }
