@@ -1,90 +1,55 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Minus, MessageCircle } from "lucide-react";
 
-interface ChatTifaProps {
-  mood?: string;
+interface Message {
+  sender: "tifa" | "user";
+  text: string;
 }
 
-type ChatMessage = { sender: "tifa" | "user"; text: string };
-
-export default function ChatTifa({ mood = "focused" }: ChatTifaProps) {
+export default function ChatTifa({ mood }: { mood: string }) {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typing, setTyping] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [minimized, setMinimized] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  // 🌈 Avatar gradient theo mood
-  const moodColor =
-    mood === "happy"
-      ? "from-pink-400 to-yellow-300"
-      : mood === "focused"
-      ? "from-blue-400 to-purple-400"
-      : mood === "confident"
-      ? "from-red-400 to-orange-400"
-      : mood === "tired"
-      ? "from-gray-400 to-gray-600"
-      : "from-cyan-400 to-teal-400";
-
-  // 🧠 Greeting message + auto voice
+  // Auto scroll
   useEffect(() => {
-    const greet = async () => {
-      const greeting = "Hey Trader, how do you feeling today?";
-      setTyping(true);
-      await typeEffect(greeting);
-      setTyping(false);
-      setMessages([{ sender: "tifa", text: greeting }]);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-      // 🔊 Play greeting voice (Piper)
+  // Greeting + voice
+  useEffect(() => {
+    const greetText = "Hey Trader, how do you feeling today?";
+    setMessages([{ sender: "tifa", text: greetText }]);
+
+    async function playGreeting() {
       try {
         const res = await fetch(
-          `/api/voice?text=${encodeURIComponent(greeting)}`
+          `/api/voice?text=${encodeURIComponent(greetText)}`
         );
         const data = await res.json();
         if (data.audio) {
-          const audioBlob = b64toBlob(data.audio, "audio/wav");
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const player = new Audio(audioUrl);
-          player.play().catch((err) => console.warn("⚠️ Autoplay blocked:", err));
+          const blob = b64toBlob(data.audio, "audio/wav");
+          const url = URL.createObjectURL(blob);
+          setAudioUrl(url);
+          const player = new Audio(url);
+          player.play().catch(() => {});
         }
       } catch (err) {
-        console.warn("⚠️ Voice unavailable:", err);
+        console.error("🎧 Greeting voice error:", err);
       }
-    };
-    greet();
-  }, [mood]);
-
-  // ✨ Hiệu ứng gõ chữ cho Tifa
-  async function typeEffect(text: string) {
-    let typed = "";
-    for (let i = 0; i < text.length; i++) {
-      typed += text[i];
-      setMessages([{ sender: "tifa", text: typed }]);
-      await new Promise((r) => setTimeout(r, 35));
     }
-  }
+    playGreeting();
+  }, []);
 
-  // 🎧 Base64 → Blob helper
-  function b64toBlob(b64Data: string, contentType = "audio/wav") {
-    const byteCharacters = atob(b64Data);
-    const byteNumbers = Array.from(byteCharacters, (c) => c.charCodeAt(0));
-    return new Blob([new Uint8Array(byteNumbers)], { type: contentType });
-  }
-
-  // 🔽 Auto scroll khi có tin nhắn mới
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // 📤 Gửi tin nhắn
-  const handleSend = async () => {
+  async function sendMessage() {
     if (!input.trim()) return;
-    const newMessages: ChatMessage[] = [
-      ...messages,
-      { sender: "user", text: input } as ChatMessage,
-    ];
+    const newMessages: Message[] = [...messages, { sender: "user", text: input }];
     setMessages(newMessages);
     setInput("");
     setTyping(true);
@@ -93,102 +58,155 @@ export default function ChatTifa({ mood = "focused" }: ChatTifaProps) {
       const res = await fetch("/api/tifa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, mood: mood.toLowerCase() }),
       });
       const data = await res.json();
-      const reply = data.reply || "Tifa couldn’t reach the server 💭";
+      const reply = data.reply || "Hmm... I’m thinking 🧠";
 
-      // 🧠 Cập nhật tin nhắn mới
-      setMessages([...newMessages, { sender: "tifa", text: reply } as ChatMessage]);
+      // Typing effect
+      for (let i = 0; i < reply.length; i++) {
+        setMessages([
+          ...newMessages,
+          { sender: "tifa", text: reply.slice(0, i + 1) },
+        ]);
+        await new Promise((r) => setTimeout(r, 15));
+      }
 
-      // 🔊 Voice Tifa đọc reply
+      // Auto voice
       try {
-        const voiceRes = await fetch(
+        const vRes = await fetch(
           `/api/voice?text=${encodeURIComponent(reply)}`
         );
-        const voiceData = await voiceRes.json();
-        if (voiceData.audio) {
-          const audioBlob = b64toBlob(voiceData.audio, "audio/wav");
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const player = new Audio(audioUrl);
+        const vData = await vRes.json();
+        if (vData.audio) {
+          const blob = b64toBlob(vData.audio, "audio/wav");
+          const url = URL.createObjectURL(blob);
+          setAudioUrl(url);
+          const player = new Audio(url);
           player.play().catch(() => {});
         }
-      } catch (e) {
-        console.warn("Voice for reply not available");
+      } catch (err) {
+        console.warn("🎙️ Voice fetch error:", err);
       }
-    } catch {
-      setMessages([
-        ...newMessages,
-        { sender: "tifa", text: "Hmm… I’m having trouble connecting 💭" } as ChatMessage,
-      ]);
+    } catch (err) {
+      console.error("❌ Chat error:", err);
     } finally {
       setTyping(false);
     }
-  };
+  }
+
+  function b64toBlob(b64: string, type = "audio/wav") {
+    const bin = atob(b64);
+    const arr = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return new Blob([arr], { type });
+  }
+
+  const moodLower = mood.toLowerCase();
+  const avatarSrc = `/tifa_${moodLower}.png`;
+  const bgMood =
+    moodLower === "happy"
+      ? "bg-yellow-200/10"
+      : moodLower === "confident"
+      ? "bg-pink-200/10"
+      : moodLower === "focused"
+      ? "bg-blue-200/10"
+      : moodLower === "anxious"
+      ? "bg-purple-200/10"
+      : "bg-gray-200/10";
 
   return (
-    <div className="fixed bottom-6 right-6 w-80 rounded-2xl bg-gray-900/90 border border-gray-700 shadow-2xl backdrop-blur-md overflow-hidden">
+    <div
+      className={`fixed bottom-5 right-5 w-80 border border-gray-700 rounded-2xl shadow-2xl ${bgMood} backdrop-blur-md text-gray-100`}
+    >
       {/* Header */}
-      <div className={`flex items-center gap-3 p-3 bg-gradient-to-r ${moodColor}`}>
-        <Image
-          src={`/tifa_${mood}.png`}
-          alt="Tifa Avatar"
-          width={42}
-          height={42}
-          className="rounded-full border border-white/40"
-        />
-        <div>
-          <h3 className="text-white font-semibold">Tifa — Trading Assistant</h3>
-          <p className="text-xs text-gray-200">Mood Today: {mood}</p>
+      <div className="flex items-center justify-between p-3 border-b border-gray-700 bg-gradient-to-r from-pink-500/30 to-purple-500/30 rounded-t-2xl">
+        <div className="flex items-center gap-3">
+          <img
+            src={avatarSrc}
+            alt="Tifa Avatar"
+            width={40}
+            height={40}
+            className="rounded-full border border-pink-400 shadow-md"
+          />
+          <div>
+            <p className="font-semibold text-pink-300">Tifa — Trading Assistant</p>
+            <p className="text-xs text-gray-300">Mood Today: {mood}</p>
+          </div>
         </div>
-      </div>
 
-      {/* Chat body */}
-      <div className="h-72 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {messages.map((msg, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`p-2 rounded-xl max-w-[85%] text-sm ${
-              msg.sender === "user"
-                ? "ml-auto bg-pink-600 text-white"
-                : "mr-auto bg-gray-800 text-gray-100"
-            }`}
-          >
-            {msg.text}
-          </motion.div>
-        ))}
-        {typing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ repeat: Infinity, duration: 1 }}
-            className="text-gray-400 text-xs italic"
-          >
-            Tifa is typing…
-          </motion.div>
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="flex items-center border-t border-gray-700">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Ask Tifa something..."
-          className="flex-1 bg-transparent text-gray-200 text-sm p-3 focus:outline-none"
-        />
+        {/* Minimize button */}
         <button
-          onClick={handleSend}
-          className="bg-pink-500 hover:bg-pink-600 text-white text-sm px-4 py-2 m-2 rounded-lg"
+          onClick={() => setMinimized(!minimized)}
+          className="text-gray-300 hover:text-white transition"
+          aria-label="Minimize chat"
         >
-          Send
+          {minimized ? <MessageCircle size={18} /> : <Minus size={18} />}
         </button>
       </div>
+
+      {/* Chat body with animation */}
+      <AnimatePresence initial={false}>
+        {!minimized && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="h-80 overflow-y-auto p-3 space-y-2 text-sm">
+              <AnimatePresence>
+                {messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    className={`p-2 rounded-lg max-w-[90%] ${
+                      msg.sender === "user"
+                        ? "ml-auto bg-pink-600/60"
+                        : "mr-auto bg-gray-800/70"
+                    }`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {msg.text}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {typing && (
+                <motion.div
+                  className="flex gap-1 mt-2 text-gray-400 text-xs"
+                  initial={{ opacity: 0.3 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <span>•</span>
+                  <span>•</span>
+                  <span>•</span>
+                </motion.div>
+              )}
+              <div ref={endRef} />
+            </div>
+
+            {/* Input box */}
+            <div className="flex gap-2 p-3 border-t border-gray-700 bg-gray-900/40 rounded-b-2xl">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Ask Tifa something..."
+                className="flex-1 px-3 py-2 rounded-lg bg-gray-800 text-gray-100 text-sm border border-gray-700 focus:outline-none focus:ring-1 focus:ring-pink-400"
+              />
+              <button
+                onClick={sendMessage}
+                className="px-3 py-2 bg-pink-500 hover:bg-pink-600 rounded-lg text-white text-sm font-semibold"
+              >
+                Send
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
