@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeVibe
 
-## Getting Started
+TradeVibe is a Next.js frontend plus a small Python insight pipeline that generates a daily trader mood, vibe quote, voice clip, and playlist bundle.
 
-First, run the development server:
+## Stack
+
+- Next.js 15 / React 19
+- App Router + legacy Pages API routes
+- Local Ollama models for vibe/chat generation
+- Piper for local TTS
+- YouTube + Spotify APIs for playlist lookup
+- PM2 or systemd for process management
+
+## Runtime layout
+
+Source code stays in the repo. Runtime artifacts now live under `runtime/` and are ignored by git:
+
+- `runtime/daily_vibes/`: generated JSON and WAV files
+- `runtime/logs/`: pipeline and model logs
+- `runtime/latest.json`: pointer to the most recent generated bundle
+
+The repo no longer relies on `insight_engine/output` or `insight_engine/logs` as the primary runtime location.
+
+## Environment
+
+Copy `.env.example` to `.env` and fill in the required values.
+
+Key variables:
+
+- `HOST`, `PORT`
+- `TRADEVIBE_RUNTIME_DIR`
+- `TRADEVIBE_TIMEZONE`
+- `QWEN_API_URL`, `GEMMA_API_URL`, `TIFA_API_URL`, `TIFA_MODEL`
+- `YOUTUBE_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_SECRET`
+- `PIPER_BIN`, `PIPER_MODEL`
+
+## Commands
+
+```bash
+npm ci
+npm run lint
+npm run build
+npm run start
+```
+
+For local development:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Web app
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The repo ships with:
 
-## Learn More
+- `start.sh`: runtime-safe web entrypoint
+- `ops/pm2/ecosystem.config.cjs`: PM2 config tracked in git
+- `ops/systemd/tradevibe-web.service`: systemd service template for the web app
 
-To learn more about Next.js, take a look at the following resources:
+### Insight pipeline
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The repo ships with:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `insight_engine/tradevibe_runner.sh`: daily pipeline entrypoint
+- `ops/systemd/tradevibe-insight.service`: oneshot service template
+- `ops/systemd/tradevibe-insight.timer`: daily timer template
 
-## Deploy on Vercel
+Important: only enable the timer, not the oneshot service itself. Enabling both causes duplicate daily generations.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Operational notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `scripts/prepare-runtime.sh` creates the runtime directories and copies over any legacy files from `insight_engine/output` and `insight_engine/logs` on first run.
+- `/api/today` now reads generated WAV files directly instead of re-running Piper on every page load.
+- The canonical "latest bundle" is `runtime/latest.json`.
+
+## Verification
+
+After deploy, verify:
+
+```bash
+npm run check
+curl http://127.0.0.1:3100/api/today
+systemctl status tradevibe-insight.timer
+```

@@ -2,19 +2,25 @@
 from dotenv import load_dotenv
 import os
 
-# ✅ Load file .env ở thư mục cha (../.env)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_PATH = os.path.join(BASE_DIR, '..', '.env')
+ENV_PATH = os.path.join(BASE_DIR, "..", ".env")
 
-print(f"🔍 Looking for .env at: {ENV_PATH}")
+print(f"Looking for .env at: {ENV_PATH}")
 
-# ✅ Load env
 if load_dotenv(ENV_PATH):
-    print("✅ .env loaded successfully!")
+    print(".env loaded successfully")
 else:
-    print("⚠️ Failed to load .env")
+    print("Failed to load .env")
 
-# ✅ Test output
-print("YOUTUBE_API_KEY:", os.getenv("YOUTUBE_API_KEY"))
-print("SPOTIFY_CLIENT_ID:", os.getenv("SPOTIFY_CLIENT_ID"))
-print("SPOTIFY_SECRET:", os.getenv("SPOTIFY_SECRET"))
+for key in [
+    "TRADEVIBE_RUNTIME_DIR",
+    "TRADEVIBE_TIMEZONE",
+    "QWEN_API_URL",
+    "TIFA_API_URL",
+    "YOUTUBE_API_KEY",
+    "SPOTIFY_CLIENT_ID",
+    "SPOTIFY_SECRET",
+    "PIPER_BIN",
+    "PIPER_MODEL",
+]:
+    print(f"{key}: {'set' if os.getenv(key) else 'missing'}")

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, MessageCircle } from "lucide-react";
@@ -13,7 +14,6 @@ export default function ChatTifa({ mood }: { mood: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [minimized, setMinimized] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,7 @@ export default function ChatTifa({ mood }: { mood: string }) {
 
   // Greeting + voice
   useEffect(() => {
-    const greetText = "Hey Trader, how do you feeling today?";
+    const greetText = "Hey trader, how are you feeling today?";
     setMessages([{ sender: "tifa", text: greetText }]);
 
     async function playGreeting() {
@@ -36,7 +36,6 @@ export default function ChatTifa({ mood }: { mood: string }) {
         if (data.audio) {
           const blob = b64toBlob(data.audio, "audio/wav");
           const url = URL.createObjectURL(blob);
-          setAudioUrl(url);
           const player = new Audio(url);
           player.play().catch(() => {});
         }
@@ -81,7 +80,6 @@ export default function ChatTifa({ mood }: { mood: string }) {
         if (vData.audio) {
           const blob = b64toBlob(vData.audio, "audio/wav");
           const url = URL.createObjectURL(blob);
-          setAudioUrl(url);
           const player = new Audio(url);
           player.play().catch(() => {});
         }
@@ -121,7 +119,7 @@ export default function ChatTifa({ mood }: { mood: string }) {
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-700 bg-gradient-to-r from-pink-500/30 to-purple-500/30 rounded-t-2xl">
         <div className="flex items-center gap-3">
-          <img
+          <Image
             src={avatarSrc}
             alt="Tifa Avatar"
             width={40}

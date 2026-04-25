@@ -19,10 +19,12 @@
 
 # production
 /build
+/runtime/
 
 # misc
 .DS_Store
 *.pem
+*.pyc
 
 # debug
 npm-debug.log*
@@ -39,3 +41,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# insight runtime artifacts
+/insight_engine/output/
+/insight_engine/logs/
+/insight_engine/__pycache__/

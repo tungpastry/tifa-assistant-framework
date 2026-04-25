@@ -1,0 +1,38 @@
+# SELECTIVE CONTEXT — TradeVibe Repo
+
+README.md
+package.json
+next.config.ts
+tsconfig.json
+tailwind.config.js
+postcss.config.js
+postcss.config.mjs
+
+app/layout.tsx
+app/page.tsx
+app/globals.css
+
+app/api/today/route.ts
+app/api/tifa/route.ts
+app/api/playlist/route.ts
+
+pages/api/voice.ts
+pages/api/vibe.ts
+pages/api/music.ts
+pages/api/mood_music.ts
+
+components/ChatTifa.tsx
+components/ThemeToggle.tsx
+
+insight_engine/config.json
+insight_engine/insight_engine_v3.py
+insight_engine/music_recommender_v3.py
+insight_engine/tradevibe_runner.sh
+
+# Do NOT load:
+# .env
+# node_modules/
+# .next/
+# insight_engine/output/
+# insight_engine/logs/
+# generated audio files

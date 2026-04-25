@@ -1,26 +1,34 @@
 #!/bin/bash
-LOGFILE="/home/nexus/projects/tradevibe-org/insight_engine/logs/tradevibe_pipeline.log"
-mkdir -p "$(dirname "$LOGFILE")"
+set -euo pipefail
 
-# 🎯 Mood rotation
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUNTIME_DIR="${TRADEVIBE_RUNTIME_DIR:-$ROOT_DIR/runtime}"
+LOG_DIR="$RUNTIME_DIR/logs"
+LOGFILE="$LOG_DIR/tradevibe_pipeline.log"
+
+"$ROOT_DIR/scripts/prepare-runtime.sh"
+
+mkdir -p "$LOG_DIR"
+
 MOODS=("focused" "tired" "anxious" "happy" "confident")
-MOOD=${MOODS[$RANDOM % ${#MOODS[@]}]}
 
-# Export để script Python nhận biết
+if [[ -z "${TRADERVIBE_MOOD:-}" ]]; then
+  TRADERVIBE_MOOD="${MOODS[$RANDOM % ${#MOODS[@]}]}"
+fi
+
+MOOD="$TRADERVIBE_MOOD"
 export TRADERVIBE_MOOD="$MOOD"
 
 {
   echo "==============================="
-  echo "🕒 $(date '+%Y-%m-%d %H:%M:%S')"
-  echo "🎯 Selected mood: $MOOD"
+  echo "Time: $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "Selected mood: $MOOD"
   echo "==============================="
 
-  # 1️⃣ Generate vibe + voice
-  /usr/bin/python3 /home/nexus/projects/tradevibe-org/insight_engine/insight_engine_v3.py
+  /usr/bin/python3 "$ROOT_DIR/insight_engine/insight_engine_v3.py"
 
-  # 2️⃣ Generate music playlist
-  /usr/bin/python3 /home/nexus/projects/tradevibe-org/insight_engine/music_recommender_v3.py
+  /usr/bin/python3 "$ROOT_DIR/insight_engine/music_recommender_v3.py"
 
-  echo "✅ Completed TradeVibe daily generation"
+  echo "Completed TradeVibe daily generation"
   echo
 } >> "$LOGFILE" 2>&1

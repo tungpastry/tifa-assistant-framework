@@ -1,35 +1,47 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import {
+  ensureRuntimeDirs,
+  getCurrentDate,
+  getDailyVibesDir,
+  listFilesByMtimeDesc,
+  readJsonFile,
+} from "@/lib/runtime";
 
-// ========================================================
-// GET /api/playlist?mood=focused
-// ========================================================
+interface PlaylistItem {
+  name?: string;
+  title?: string;
+  url: string;
+}
+
+interface MusicBundle {
+  mood?: string;
+  spotify?: PlaylistItem[];
+  youtube?: PlaylistItem[];
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const mood = (searchParams.get("mood") || "focused").toLowerCase();
+    const today = getCurrentDate();
 
-    // Tự động tìm file JSON theo ngày
-    const today = new Date().toISOString().split("T")[0];
-    const filename = `music_${mood}_${today}.json`;
-    const filePath = path.join(
-      process.cwd(),
-      "insight_engine",
-      "output",
-      "daily_vibes",
-      filename
+    ensureRuntimeDirs();
+
+    const matches = listFilesByMtimeDesc(
+      getDailyVibesDir(),
+      (fileName) => fileName.startsWith(`music_${mood}_`) && fileName.endsWith(".json")
     );
+    const selected =
+      matches.find((file) => file.name.includes(today)) || matches[0] || null;
 
-    if (!fs.existsSync(filePath)) {
+    if (!selected) {
       return NextResponse.json(
         { error: `Playlist for ${mood} not found.` },
         { status: 404 }
       );
     }
 
-    const data = fs.readFileSync(filePath, "utf8");
-    const jsonData = JSON.parse(data);
+    const jsonData = readJsonFile<MusicBundle>(selected.fullPath);
 
     return NextResponse.json({
       mood: jsonData.mood || mood,
@@ -37,7 +49,7 @@ export async function GET(req: Request) {
       youtube: jsonData.youtube || [],
     });
   } catch (err) {
-    console.error("❌ [API] /playlist error:", err);
+    console.error("TradeVibe /api/playlist error:", err);
     return NextResponse.json(
       { error: "Failed to load playlist data." },
       { status: 500 }

@@ -1,0 +1,19 @@
+[Unit]
+Description=TradeVibe Web App
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nexus
+WorkingDirectory=/home/nexus/projects/tradevibe-org
+Environment=HOST=0.0.0.0
+Environment=PORT=3100
+Environment=TRADEVIBE_RUNTIME_DIR=/home/nexus/projects/tradevibe-org/runtime
+Environment=TRADEVIBE_TIMEZONE=Asia/Ho_Chi_Minh
+ExecStart=/bin/bash /home/nexus/projects/tradevibe-org/start.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

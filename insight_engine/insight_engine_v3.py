@@ -1,25 +1,60 @@
 #!/usr/bin/env python3
-import os, json, subprocess, datetime, requests, logging, traceback
+import json
+import logging
+import os
+import subprocess
+import traceback
+from pathlib import Path
 
-# === Paths & setup ===
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(BASE_DIR, "output/daily_vibes")
-LOG_DIR = os.path.join(BASE_DIR, "logs")
+import requests
+from dotenv import load_dotenv
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(LOG_DIR, exist_ok=True)
+from runtime_paths import ensure_runtime_dirs, today_string
 
-LOG_FILE = os.path.join(LOG_DIR, "tradevibe_emotion.log")
-logging.basicConfig(filename=LOG_FILE, level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent
+load_dotenv(REPO_ROOT / ".env")
 
-# === Config ===
-OLLAMA_URLS = [
-    os.environ.get("OLLAMA_URL", "http://192.168.1.15:11434"),  # Desktop default
-    "http://127.0.0.1:11434",  # fallback local
-]
-PIPER_BIN = "/home/nexus/piper-env/bin/piper"
-PIPER_MODEL = "/home/nexus/piper/voices/en_US-libritts-high.onnx"
+_, OUTPUT_DIR, LOG_DIR = ensure_runtime_dirs()
+
+LOG_FILE = LOG_DIR / "tradevibe_emotion.log"
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+
+def build_llm_urls():
+    urls = []
+
+    qwen_api_url = os.environ.get("QWEN_API_URL")
+    ollama_url = os.environ.get("OLLAMA_URL")
+
+    if qwen_api_url:
+        urls.append(qwen_api_url.rstrip("/"))
+
+    if ollama_url:
+        urls.append(f"{ollama_url.rstrip('/')}/api/generate")
+
+    urls.extend([
+        "http://127.0.0.1:11434/api/generate",
+        "http://192.168.1.15:11434/api/generate",
+    ])
+
+    deduped = []
+    for url in urls:
+        if url not in deduped:
+            deduped.append(url)
+
+    return deduped
+
+
+OLLAMA_API_URLS = build_llm_urls()
+PIPER_BIN = os.environ.get("PIPER_BIN", "/home/nexus/piper-env/bin/piper")
+PIPER_MODEL = os.environ.get(
+    "PIPER_MODEL", "/home/nexus/piper/voices/en_US-libritts-high.onnx"
+)
 
 # === Emotion-based prompt templates ===
 MOOD_PROMPTS = {
@@ -32,20 +67,20 @@ MOOD_PROMPTS = {
 }
 
 def choose_prompt(mood: str) -> str:
-    """Return prompt based on mood key"""
     return MOOD_PROMPTS.get(mood.lower(), MOOD_PROMPTS["default"])
 
-# === Core functions ===
+
 def generate_vibe(mood="default"):
     prompt = choose_prompt(mood)
     payload = {"model": "qwen3:4b-instruct-2507-q4_K_M", "prompt": prompt, "stream": False}
     last_err = None
 
-    for base in OLLAMA_URLS:
+    for api_url in OLLAMA_API_URLS:
         try:
-            r = requests.post(f"{base}/api/generate", json=payload, timeout=45)
+            r = requests.post(api_url, json=payload, timeout=45)
+            r.raise_for_status()
             raw_output = r.text.strip()
-            logging.info(f"[RAW LLM OUTPUT] {raw_output} (via {base})")
+            logging.info(f"[RAW LLM OUTPUT] {raw_output} (via {api_url})")
 
             try:
                 data = json.loads(raw_output)
@@ -55,14 +90,14 @@ def generate_vibe(mood="default"):
                 text = data.get("response", "").strip()
             except json.JSONDecodeError:
                 text = raw_output.strip()
-                logging.warning(f"⚠️ Non-JSON output from {base}")
+                logging.warning(f"Non-JSON output from {api_url}")
 
             if text:
-                logging.info(f"[{datetime.datetime.now()}] Mood: {mood} → Generated vibe: {text}")
+                logging.info(f"Mood={mood} generated vibe successfully.")
                 return text
         except Exception as e:
             last_err = str(e)
-            logging.warning(f"⚠️ Ollama request failed ({base}): {e}")
+            logging.warning(f"Ollama request failed ({api_url}): {e}")
             continue
 
     logging.warning(f"All Ollama endpoints failed, last error: {last_err}")
@@ -70,34 +105,33 @@ def generate_vibe(mood="default"):
 
 
 def synthesize_voice(text, filename):
-    """Use Piper TTS"""
-    out_wav = os.path.join(OUTPUT_DIR, filename)
+    out_wav = OUTPUT_DIR / filename
     cmd = [PIPER_BIN, "--model", PIPER_MODEL, "--output_file", out_wav]
-    logging.info(f"🎙 Running Piper: {' '.join(cmd)}")
+    logging.info(f"Running Piper for {filename}")
 
     try:
         subprocess.run(cmd, input=text.encode("utf-8"), check=True)
-        logging.info(f"✅ Voice saved to {out_wav}")
+        logging.info(f"Voice saved to {out_wav}")
         return out_wav
     except subprocess.CalledProcessError as e:
-        logging.error(f"❌ Piper failed: {e}")
-    except Exception as e:
-        logging.error(f"❌ Unknown Piper error: {traceback.format_exc()}")
+        logging.error(f"Piper failed: {e}")
+    except Exception:
+        logging.error(traceback.format_exc())
     return None
 
 
-# === Entry point ===
 if __name__ == "__main__":
     try:
         mood = os.environ.get("TRADERVIBE_MOOD", "default")
+        today = today_string()
         vibe_text = generate_vibe(mood)
-        json_path = os.path.join(OUTPUT_DIR, f"vibe_{mood}_{datetime.date.today()}.json")
+        json_path = OUTPUT_DIR / f"vibe_{mood}_{today}.json"
 
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump({"mood": mood, "text": vibe_text}, f, ensure_ascii=False, indent=2)
-        logging.info(f"[Saved] {json_path}")
+        with open(json_path, "w", encoding="utf-8") as handle:
+            json.dump({"mood": mood, "text": vibe_text}, handle, ensure_ascii=False, indent=2)
+        logging.info(f"Saved vibe JSON to {json_path}")
 
-        synthesize_voice(vibe_text, f"vibe_{mood}_{datetime.date.today()}.wav")
-        logging.info("✅ Emotion-based Insight complete.")
-    except Exception as e:
-        logging.error(f"❌ Unhandled exception: {traceback.format_exc()}")
+        synthesize_voice(vibe_text, f"vibe_{mood}_{today}.wav")
+        logging.info("Emotion insight generation completed.")
+    except Exception:
+        logging.error(traceback.format_exc())
