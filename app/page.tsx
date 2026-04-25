@@ -61,14 +61,6 @@ export default function Home() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-gray-100 px-4 overflow-hidden">
-      <motion.img
-        src="/logo.png"
-        alt="TradeVibe Logo"
-        className="w-32 h-32 mb-4 rounded-full shadow-lg mx-auto bg-white p-2"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-      />
       <motion.h1
         className="text-5xl font-extrabold mb-6 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent text-center"
         initial={{ opacity: 0, y: -20 }}
