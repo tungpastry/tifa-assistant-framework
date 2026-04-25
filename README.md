@@ -1,86 +1,76 @@
 # TradeVibe
 
-TradeVibe is a Next.js frontend plus a small Python insight pipeline that generates a daily trader mood, vibe quote, voice clip, and playlist bundle.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 
-## Stack
+TradeVibe is a daily "vibe" dashboard and interactive AI assistant for traders. It generates a daily trader mood, motivational quote, voice clip, and curated music playlist bundle to help traders maintain focus and a positive mindset.
 
-- Next.js 15 / React 19
-- App Router + legacy Pages API routes
-- Local Ollama models for vibe/chat generation
-- Piper for local TTS
-- YouTube + Spotify APIs for playlist lookup
-- PM2 or systemd for process management
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
-## Runtime layout
+## Prerequisites
+- Node.js >= 18.18.0
+- Python >= 3.10
+- [Ollama](https://ollama.ai/) installed locally with models (e.g., `qwen2.5`, `gemma2`)
+- [Piper TTS](https://github.com/rhasspy/piper) installed locally
+- API Keys for YouTube Data API and Spotify API
 
-Source code stays in the repo. Runtime artifacts now live under `runtime/` and are ignored by git:
+## Installation
 
-- `runtime/daily_vibes/`: generated JSON and WAV files
-- `runtime/logs/`: pipeline and model logs
-- `runtime/latest.json`: pointer to the most recent generated bundle
+1. **Clone the repository:**
+   ```bash
+   git clone git@github.com:tungpastry/tradevibe-org.git
+   cd tradevibe-org
+   ```
 
-The repo no longer relies on `insight_engine/output` or `insight_engine/logs` as the primary runtime location.
+2. **Environment Variables:**
+   Copy `.env.example` to `.env` and fill in the required values (Ollama URLs, YouTube/Spotify API keys, Piper binary path).
 
-## Environment
+3. **Install dependencies:**
+   ```bash
+   npm ci
+   ```
 
-Copy `.env.example` to `.env` and fill in the required values.
+## Usage
 
-Key variables:
-
-- `HOST`, `PORT`
-- `TRADEVIBE_RUNTIME_DIR`
-- `TRADEVIBE_TIMEZONE`
-- `QWEN_API_URL`, `GEMMA_API_URL`, `TIFA_API_URL`, `TIFA_MODEL`
-- `YOUTUBE_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_SECRET`
-- `PIPER_BIN`, `PIPER_MODEL`
-
-## Commands
-
+**Development Mode:**
 ```bash
-npm ci
-npm run lint
+npm run dev
+```
+This will initialize the `runtime/` directory and start the Next.js development server at `http://localhost:3100`.
+
+**Production Build:**
+```bash
 npm run build
 npm run start
 ```
 
-For local development:
+## Documentation
+For detailed technical documentation, please refer to the `docs/` directory:
+- [Architecture](docs/architecture.md)
+- [API Reference](docs/api-reference.md)
+- [Deployment](docs/deployment.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-```bash
-npm run dev
-```
+## Roadmap
+- [x] Decouple Python pipeline and Next.js frontend
+- [x] Integrate real-time chat with local LLMs (Tifa)
+- [ ] Add user authentication and personalized history
+- [ ] Expand music providers (Apple Music)
 
-## Deploy
+## Contributing
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
 
-### Web app
+## License
+This project is licensed under the [MIT License](LICENSE).
 
-The repo ships with:
-
-- `start.sh`: runtime-safe web entrypoint
-- `ops/pm2/ecosystem.config.cjs`: PM2 config tracked in git
-- `ops/systemd/tradevibe-web.service`: systemd service template for the web app
-
-### Insight pipeline
-
-The repo ships with:
-
-- `insight_engine/tradevibe_runner.sh`: daily pipeline entrypoint
-- `ops/systemd/tradevibe-insight.service`: oneshot service template
-- `ops/systemd/tradevibe-insight.timer`: daily timer template
-
-Important: only enable the timer, not the oneshot service itself. Enabling both causes duplicate daily generations.
-
-## Operational notes
-
-- `scripts/prepare-runtime.sh` creates the runtime directories and copies over any legacy files from `insight_engine/output` and `insight_engine/logs` on first run.
-- `/api/today` now reads generated WAV files directly instead of re-running Piper on every page load.
-- The canonical "latest bundle" is `runtime/latest.json`.
-
-## Verification
-
-After deploy, verify:
-
-```bash
-npm run check
-curl http://127.0.0.1:3100/api/today
-systemctl status tradevibe-insight.timer
-```
+## Contact
+Created by [tungpastry](mailto:bakerthanhtung@gmail.com).
