@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="public/logo.png" alt="TradeVibe Logo" width="200"/>
+</div>
+
 # TradeVibe
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
