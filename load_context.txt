@@ -1,38 +1,62 @@
 # SELECTIVE CONTEXT — TradeVibe Repo
+# This file defines the core files to load for the Gemini CLI agent.
+# It focuses on application logic, configuration, and key infrastructure.
 
+# -- Project & Config --
+.gitignore
 README.md
 package.json
 next.config.ts
 tsconfig.json
 tailwind.config.js
 postcss.config.js
-postcss.config.mjs
 
+# -- Entrypoints & Core App --
 app/layout.tsx
 app/page.tsx
 app/globals.css
+start.sh
+scripts/prepare-runtime.sh
+lib/runtime.ts
 
+# -- API Routes --
 app/api/today/route.ts
 app/api/tifa/route.ts
 app/api/playlist/route.ts
-
 pages/api/voice.ts
-pages/api/vibe.ts
-pages/api/music.ts
-pages/api/mood_music.ts
 
+# -- Key Components --
 components/ChatTifa.tsx
-components/ThemeToggle.tsx
 
+# -- Python Insight Engine --
 insight_engine/config.json
 insight_engine/insight_engine_v3.py
 insight_engine/music_recommender_v3.py
 insight_engine/tradevibe_runner.sh
+insight_engine/runtime_paths.py
 
-# Do NOT load:
+# -- Documentation --
+docs/architecture.md
+docs/api-reference.md
+docs/deployment.md
+docs/troubleshooting.md
+docs/GEMINI_DEVOPS.md
+
+# -- Ops / DevOps --
+ops/pm2/ecosystem.config.cjs
+ops/systemd/tradevibe-insight.service
+ops/systemd/tradevibe-insight.timer
+
+# -- Do NOT load --
+# These files are explicitly excluded to save tokens and avoid loading secrets
+# or machine-generated content.
+#
 # .env
+# .env.*
 # node_modules/
 # .next/
+# runtime/
 # insight_engine/output/
 # insight_engine/logs/
-# generated audio files
+# *.log
+# generated audio/image/video files
