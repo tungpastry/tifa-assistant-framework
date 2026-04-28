@@ -56,28 +56,45 @@ echo ""
 echo "2. Tifa API Validation"
 assert_status "POST /api/tifa (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"message":"hello"' "${BASE_URL}/api/tifa"
 assert_status "POST /api/tifa (Empty Message)" "400" -X POST -H "Content-Type: application/json" -d '{"message":""}' "${BASE_URL}/api/tifa"
-assert_status "POST /api/tifa (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{"message":"${LONG_TIFA_TEXT}"}" "${BASE_URL}/api/tifa"
+assert_status "POST /api/tifa (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"message\":\"${LONG_TIFA_TEXT}\"}" "${BASE_URL}/api/tifa"
+echo ""
+
+# --- Tifa API Streaming Validation ---
+echo "3. Tifa API Streaming Validation"
+assert_status "POST /api/tifa/stream (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"message":"hello"' "${BASE_URL}/api/tifa/stream"
+assert_status "POST /api/tifa/stream (Empty Message)" "400" -X POST -H "Content-Type: application/json" -d '{"message":""}' "${BASE_URL}/api/tifa/stream"
+assert_status "POST /api/tifa/stream (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"message\":\"${LONG_TIFA_TEXT}\"}" "${BASE_URL}/api/tifa/stream"
 echo ""
 
 # --- Voice API Validation ---
-echo "3. Voice API Validation"
+echo "4. Voice API Validation"
 assert_status "GET /api/voice (Empty Text)" "400" "${BASE_URL}/api/voice?text="
 assert_status "GET /api/voice (Too Long)" "413" "${BASE_URL}/api/voice?text=${LONG_TEXT}"
 echo ""
 
 
 if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
-  echo "4. Live API Checks (RUN_LIVE_SMOKE=1)"
+  echo "5. Live API Checks (RUN_LIVE_SMOKE=1)"
   assert_status "POST /api/tifa (Live)" "200" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa"}' "${BASE_URL}/api/tifa"
   assert_status "GET /api/voice (Live)" "200" "${BASE_URL}/api/voice?text=Hello"
+
+  echo -n "Checking POST /api/tifa/stream (Live)..."
+  # Live stream check just confirms it opens with a 200
+  status_stream=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa Stream"}' "${BASE_URL}/api/tifa/stream")
+  if [[ "$status_stream" == "200" ]]; then
+    echo " ✅ OK (200)"
+  else
+    echo " ❌ FAIL (Expected 200, got $status_stream)"
+    exit 1
+  fi
   echo ""
 else
-    echo "4. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+    echo "5. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
 fi
 
 if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   echo ""
-  echo "5. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "6. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
   echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
 
   # Test Tifa rate limit
@@ -107,7 +124,7 @@ if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   fi
 else
     echo ""
-    echo "5. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
+    echo "6. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 

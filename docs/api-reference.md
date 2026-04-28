@@ -77,6 +77,33 @@ Proxies a chat message to the Tifa AI assistant (local LLM). This is a simple, n
   ```
   - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `UPSTREAM_AI_ERROR` (502), `AI_TIMEOUT` (504), `RATE_LIMITED` (429). The `RATE_LIMITED` error may include `details: { "retry_after_seconds": ... }`.
 
+## `POST /api/tifa/stream`
+
+Streams a Tifa chat response using Server-Sent Events (SSE). This is the preferred endpoint for interactive, real-time frontend experiences.
+
+- **Note:** The frontend has not yet been switched to use this endpoint.
+- **Request Body:**
+  ```json
+  {
+    "message": "string (The user's chat message)"
+  }
+  ```
+- **Pre-stream Error Responses:** Before the SSE connection is established, the endpoint can return standard JSON errors for validation issues:
+  - `400 VALIDATION_ERROR`
+  - `413 PAYLOAD_TOO_LARGE`
+  - `429 RATE_LIMITED`
+  - `502 UPSTREAM_AI_ERROR`
+  - `504 AI_TIMEOUT`
+- **SSE Event Stream:**
+  - `event: start` - Sent once at the beginning of a successful stream.
+    - `data: {"model":"<model-name>"}`
+  - `event: delta` - Sent for each piece of the response from the AI.
+    - `data: {"text":"..."}`
+  - `event: done` - Sent once at the very end of a successful stream.
+    - `data: {"model":"<model-name>"}`
+  - `event: error` - Sent if an error occurs during the stream.
+    - `data: {"code":"ERROR_CODE","message":"..."}`
+
 ## `GET /api/voice?text={text}`
 
 Generates audio from text using the local Piper TTS engine.
