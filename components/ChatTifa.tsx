@@ -21,6 +21,7 @@ export default function ChatTifa({ mood }: { mood: string }) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(false);
+  const greetingPlayedRef = useRef(false);
 
   useEffect(() => {
     isMounted.current = true;
@@ -32,12 +33,13 @@ export default function ChatTifa({ mood }: { mood: string }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Greeting + voice
+  // Greeting + voice (runs only once on mount)
   useEffect(() => {
     const greetText = "Hey trader, how are you feeling today?";
     setMessages([{ sender: "tifa", text: greetText }]);
 
-    if (voiceEnabled) {
+    if (voiceEnabled && !greetingPlayedRef.current) {
+      greetingPlayedRef.current = true;
       fetch(`/api/voice?text=${encodeURIComponent(greetText)}`)
         .then(res => res.json())
         .then(data => {
@@ -49,7 +51,8 @@ export default function ChatTifa({ mood }: { mood: string }) {
         })
         .catch(err => console.error("🎧 Greeting voice fetch error:", err));
     }
-  }, [voiceEnabled]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function sendMessage() {
     if (!input.trim() || sending) return;
