@@ -100,32 +100,49 @@ User message: ${message}`;
 
     // --- 3. SSE Stream Transformation ---
     const stream = new ReadableStream({
-      async start(controller) {
-        // Send start event
-        controller.enqueue(sse("start", { model }));
+      async start(streamController) {
+        let closed = false;
+        let completedNormally = false;
 
-        if (!ollamaRes.body) {
-          controller.enqueue(sse("error", { code: "INTERNAL_ERROR", message: "Upstream response body is empty." }));
-          controller.close();
-          return;
-        }
+        const enqueue = (event: string, data: unknown) => {
+          if (!closed) {
+            streamController.enqueue(sse(event, data));
+          }
+        };
 
-        const reader = ollamaRes.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        const close = () => {
+          if (!closed) {
+            closed = true;
+            streamController.close();
+          }
+        };
+
+        // Ensure timeout is cleared and stream is closed on abort
+        controller.signal.addEventListener("abort", () => {
+          enqueue("error", { code: "AI_TIMEOUT", message: "The AI service took too long to respond." });
+          close();
+        });
 
         try {
-          while (true) {
+          enqueue("start", { model });
+
+          if (!ollamaRes.body) {
+            enqueue("error", { code: "INTERNAL_ERROR", message: "Upstream response body is empty." });
+            return;
+          }
+
+          const reader = ollamaRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          outer: while (true) {
             const { done, value } = await reader.read();
             if (done) {
-              // If there's any leftover data, process it
               if (buffer) {
                 try {
                   const json = JSON.parse(buffer);
-                  if (json.response) {
-                    controller.enqueue(sse("delta", { text: json.response }));
-                  }
-                } catch {} // Ignore parsing errors on the final chunk
+                  if (json.response) enqueue("delta", { text: json.response });
+                } catch {}
               }
               break;
             }
@@ -138,28 +155,28 @@ User message: ${message}`;
               if (!line) continue;
               try {
                 const json = JSON.parse(line);
-                if (json.error) {
-                  throw new Error(json.error);
-                }
-                if (json.response) {
-                  controller.enqueue(sse("delta", { text: json.response }));
-                }
+                if (json.error) throw new Error(json.error);
+                if (json.response) enqueue("delta", { text: json.response });
                 if (json.done) {
-                  controller.close();
-                  return;
+                  completedNormally = true;
+                  break outer;
                 }
               } catch (e) {
                 console.error("Error parsing Ollama stream chunk:", line, e);
-                // Continue to the next line
               }
             }
             buffer = lines[lines.length - 1];
           }
+          // If the loop finishes without hitting json.done, we still consider it normal completion.
+          if (!completedNormally) completedNormally = true;
+
         } catch {
-           controller.enqueue(sse("error", { code: "INTERNAL_ERROR", message: "Error reading upstream response." }));
+          enqueue("error", { code: "INTERNAL_ERROR", message: "Error reading upstream response." });
         } finally {
-          controller.enqueue(sse("done", { model }));
-          controller.close();
+          if (completedNormally) {
+            enqueue("done", { model });
+          }
+          close();
         }
       },
     });
