@@ -4,9 +4,19 @@ import { randomUUID } from "crypto";
 import path from "path";
 import fs from "fs/promises";
 import { jsonError, parseTimeoutMs, safeUnlink } from "@/lib/api";
+import {
+  checkRateLimit,
+  getClientIp,
+  parsePositiveInt,
+} from "@/lib/rate-limit";
 
 const PIPER_TIMEOUT_MS = parseTimeoutMs(process.env.PIPER_TIMEOUT_MS, 10000);
 const MAX_TEXT_LENGTH = 500;
+const RATE_LIMIT_WINDOW_MS = parsePositiveInt(
+  process.env.VOICE_RATE_LIMIT_WINDOW_MS,
+  60000
+);
+const RATE_LIMIT_MAX = parsePositiveInt(process.env.VOICE_RATE_LIMIT_MAX, 10);
 
 async function generateVoice(text: string, signal: AbortSignal): Promise<Buffer> {
   const outputFile = path.join("/tmp", `${randomUUID()}.wav`);
@@ -56,6 +66,25 @@ export async function GET(req: Request) {
       "PAYLOAD_TOO_LARGE",
       `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters.`,
       413
+    );
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit({
+    key: `voice:${clientIp}`,
+    limit: RATE_LIMIT_MAX,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return jsonError(
+      "RATE_LIMITED",
+      "Too many voice requests. Please slow down.",
+      429,
+      {
+        retryable: true,
+        publicDetails: { retry_after_seconds: rateLimitResult.retryAfterSeconds },
+      }
     );
   }
 

@@ -21,7 +21,7 @@ assert_status() {
   echo -n "Checking $endpoint..."
   response=$(curl -s -o /dev/null -w "%{http_code}" "$@")
   http_status=$response
-  
+
   if [[ "$http_status" == "$expected_status" ]]; then
     echo " ✅ OK ($http_status)"
   else
@@ -73,6 +73,41 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   echo ""
 else
     echo "4. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+fi
+
+if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
+  echo ""
+  echo "5. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
+
+  # Test Tifa rate limit
+  echo -n "Checking POST /api/tifa (Rate Limit)..."
+  # First request (may be 200 or 5xx, we don't care about the status)
+  curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"message":"limit test 1"}' "${BASE_URL}/api/tifa" > /dev/null
+  # Second request (should be 429)
+  status_tifa=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"message":"limit test 2"}' "${BASE_URL}/api/tifa")
+  if [[ "$status_tifa" == "429" ]]; then
+    echo " ✅ OK (429)"
+  else
+    echo " ❌ FAIL (Expected 429, got $status_tifa)"
+    exit 1
+  fi
+
+  # Test Voice rate limit
+  echo -n "Checking GET /api/voice (Rate Limit)..."
+  # First request
+  curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/voice?text=limit-test-1" > /dev/null
+  # Second request
+  status_voice=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/voice?text=limit-test-2")
+  if [[ "$status_voice" == "429" ]]; then
+    echo " ✅ OK (429)"
+  else
+    echo " ❌ FAIL (Expected 429, got $status_voice)"
+    exit 1
+  fi
+else
+    echo ""
+    echo "5. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 

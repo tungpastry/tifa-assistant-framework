@@ -75,7 +75,7 @@ Proxies a chat message to the Tifa AI assistant (local LLM). This is a simple, n
     }
   }
   ```
-  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `UPSTREAM_AI_ERROR` (502), `AI_TIMEOUT` (504).
+  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `UPSTREAM_AI_ERROR` (502), `AI_TIMEOUT` (504), `RATE_LIMITED` (429). The `RATE_LIMITED` error may include `details: { "retry_after_seconds": ... }`.
 
 ## `GET /api/voice?text={text}`
 
@@ -95,7 +95,7 @@ Generates audio from text using the local Piper TTS engine.
     }
     ```
 - **Error Responses:** Uses the standardized error envelope.
-  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `TTS_TIMEOUT` (504), `TTS_GENERATION_FAILED` (500).
+  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `TTS_TIMEOUT` (504), `TTS_GENERATION_FAILED` (500), `RATE_LIMITED` (429). The `RATE_LIMITED` error may include `details: { "retry_after_seconds": ... }`.
 
 ## `GET /api/health`
 

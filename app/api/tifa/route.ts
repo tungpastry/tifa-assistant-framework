@@ -2,11 +2,22 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { jsonError, parseTimeoutMs } from "@/lib/api";
+import {
+  checkRateLimit,
+  getClientIp,
+  parsePositiveInt,
+} from "@/lib/rate-limit";
 
 const TIFA_TIMEOUT_MS = parseTimeoutMs(process.env.TIFA_TIMEOUT_MS, 20000);
 const MAX_MESSAGE_LENGTH = 2000;
 const PROMPT_PATH = process.env.TIFA_PROMPT_PATH || "prompts/TIFA_RUNTIME.md";
 const DEFAULT_PROMPT = "You are Tifa — a warm, encouraging AI trading companion. Respond naturally and motivate the user like a supportive partner.";
+
+const RATE_LIMIT_WINDOW_MS = parsePositiveInt(
+  process.env.TIFA_RATE_LIMIT_WINDOW_MS,
+  60000
+);
+const RATE_LIMIT_MAX = parsePositiveInt(process.env.TIFA_RATE_LIMIT_MAX, 20);
 
 async function getTifaPrompt() {
   try {
@@ -41,9 +52,29 @@ export async function POST(req: Request) {
       );
     }
 
+    const clientIp = getClientIp(req);
+    const rateLimitResult = checkRateLimit({
+      key: `tifa:${clientIp}`,
+      limit: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return jsonError(
+        "RATE_LIMITED",
+        "Too many Tifa requests. Please slow down.",
+        429,
+        {
+          retryable: true,
+          publicDetails: { retry_after_seconds: rateLimitResult.retryAfterSeconds },
+        }
+      );
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIFA_TIMEOUT_MS);
 
+    // ... rest of the function
     try {
       const tifaPrompt = await getTifaPrompt();
       const finalPrompt = `${tifaPrompt}\nUser message: ${message}`;

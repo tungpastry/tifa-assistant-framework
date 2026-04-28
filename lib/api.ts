@@ -10,6 +10,7 @@ export type ErrorCode =
   | "TTS_TIMEOUT"
   | "TTS_GENERATION_FAILED"
   | "HEALTH_CHECK_FAILED"
+  | "RATE_LIMITED"
   | "INTERNAL_ERROR";
 
 export interface JsonErrorOptions {
