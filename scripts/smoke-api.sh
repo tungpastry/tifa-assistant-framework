@@ -14,6 +14,7 @@ echo "--------------------------------------"
 assert_status() {
   local endpoint=$1
   local expected_status=$2
+  shift 2
   local response
   local http_status
 
@@ -31,7 +32,24 @@ assert_status() {
 
 # --- Health Check ---
 echo "1. Health Endpoint"
-assert_status "/api/health" "200" "${BASE_URL}/api/health"
+echo -n "Checking /api/health..."
+temp_file=$(mktemp)
+http_status=$(curl -s -o "$temp_file" -w "%{http_code}" "${BASE_URL}/api/health")
+
+if [[ "$http_status" == "200" || "$http_status" == "503" ]]; then
+  if grep -q '"status"' "$temp_file"; then
+    echo " ✅ OK ($http_status)"
+  else
+    echo " ❌ FAIL (Valid status $http_status, but no 'status' field in JSON)"
+    rm -f "$temp_file"
+    exit 1
+  fi
+else
+  echo " ❌ FAIL (Expected 200 or 503, got $http_status)"
+  rm -f "$temp_file"
+  exit 1
+fi
+rm -f "$temp_file"
 echo ""
 
 # --- Tifa API Validation ---

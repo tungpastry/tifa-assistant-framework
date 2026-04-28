@@ -13,8 +13,9 @@ export type ErrorCode =
   | "INTERNAL_ERROR";
 
 export interface JsonErrorOptions {
-  details?: unknown;
+  details?: unknown;        // server log only
   retryable?: boolean;
+  publicDetails?: unknown;  // client-safe details
 }
 
 /**
@@ -37,7 +38,9 @@ export function jsonError(
   console.error(`[${status}] ${code}: ${message}`, {
     requestId,
     details: options.details,
+    publicDetails: options.publicDetails,
   });
+
   return NextResponse.json(
     {
       error: {
@@ -45,7 +48,7 @@ export function jsonError(
         message,
         request_id: requestId,
         retryable: options.retryable ?? false,
-        ...options,
+        ...(options.publicDetails ? { details: options.publicDetails } : {}),
       },
     },
     { status }
