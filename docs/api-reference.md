@@ -64,12 +64,17 @@ Proxies a chat message to the Tifa AI assistant (local LLM). This is a simple, n
       "model": "string (Name of the model used)"
     }
     ```
+- **Error Responses:**
+  - `400 Bad Request`: Invalid JSON, or message is empty.
+  - `413 Payload Too Large`: Message exceeds the maximum character limit.
+  - `502 Bad Gateway`: The upstream AI service (Ollama) returned an error.
+  - `504 Gateway Timeout`: The AI service took too long to respond.
 
 ## `GET /api/voice?text={text}`
 
 Generates audio from text using the local Piper TTS engine.
 
-- **Implementation:** `pages/api/voice.ts`
+- **Implementation:** `app/api/voice/route.ts` (Previously `pages/api/voice.ts`)
 - **Query Params:**
   - `text` (string, required): The text to synthesize into speech.
 - **Success Response (200 OK):**
@@ -78,7 +83,11 @@ Generates audio from text using the local Piper TTS engine.
     ```json
     {
       "voice": "string (Voice identifier)",
-      "model": "string (Path to the model file)",
+      "model": "string (Name of the model used)",
       "audio": "string (base64 WAV audio data)"
     }
     ```
+- **Error Responses:**
+  - `400 Bad Request`: The `text` parameter is empty.
+  - `413 Payload Too Large`: The `text` exceeds the maximum character limit.
+  - `504 Gateway Timeout`: Voice generation took too long to complete.

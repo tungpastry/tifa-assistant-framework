@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "tradevibe-web",
-      cwd: "/home/nexus/projects/tradevibe-org",
+      cwd: process.env.TRADEVIBE_REPO_ROOT || "/home/nexus/projects/tradevibe-org",
       script: "start.sh",
       interpreter: "bash",
       env: {
