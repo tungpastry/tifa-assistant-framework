@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import ChatTifa from "@/components/ChatTifa";
+import { b64ToBlob } from "@/lib/client-api";
 
 interface PlaylistItem {
   name?: string;
@@ -16,9 +17,11 @@ export default function Home() {
   const [vibe, setVibe] = useState("");
   const [spotify, setSpotify] = useState<PlaylistItem[]>([]);
   const [youtube, setYoutube] = useState<PlaylistItem[]>([]);
-  const [audio, setAudio] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let url: string | null = null;
+
     async function fetchToday() {
       try {
         const res = await fetch("/api/today");
@@ -32,32 +35,33 @@ export default function Home() {
         );
         setSpotify(data.spotify || []);
         setYoutube(data.youtube || []);
-        setAudio(data.audio || null);
-
-        // 🔊 Auto-play Piper voice
+        
         if (data.audio) {
-          const audioBlob = b64toBlob(data.audio, "audio/wav");
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const player = new Audio(audioUrl);
+          const audioBlob = b64ToBlob(data.audio, "audio/wav");
+          url = URL.createObjectURL(audioBlob);
+          setAudioUrl(url);
+
+          const player = new Audio(url);
           player.play().catch((err) =>
             console.warn("⚠️ Auto-play blocked:", err)
           );
         }
+
       } catch (err) {
         console.error("❌ Failed to fetch /api/today:", err);
       } finally {
         setLoading(false);
       }
     }
+    
     fetchToday();
+    
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
   }, []);
-
-  // Helper: Base64 → Blob
-  function b64toBlob(b64Data: string, contentType = "audio/wav") {
-    const byteCharacters = atob(b64Data);
-    const byteNumbers = Array.from(byteCharacters, (c) => c.charCodeAt(0));
-    return new Blob([new Uint8Array(byteNumbers)], { type: contentType });
-  }
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-gray-100 px-4 overflow-hidden">
@@ -94,12 +98,12 @@ export default function Home() {
             </motion.p>
           </div>
 
-          {audio && (
+          {audioUrl && (
             <audio
               controls
               autoPlay
               className="my-6 w-80"
-              src={URL.createObjectURL(b64toBlob(audio, "audio/wav"))}
+              src={audioUrl}
             >
               Your browser does not support audio playback.
             </audio>
