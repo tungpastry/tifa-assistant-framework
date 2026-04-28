@@ -18,9 +18,6 @@ async function getTifaPrompt() {
 }
 
 export async function POST(req: Request) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), parseInt(TIFA_TIMEOUT, 10));
-
   try {
     let body;
     try {
@@ -39,39 +36,50 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters.` }, { status: 413 });
     }
 
-    const tifaPrompt = await getTifaPrompt();
-    const finalPrompt = `${tifaPrompt}\nUser message: ${message}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), parseInt(TIFA_TIMEOUT, 10));
 
-    const res = await fetch(process.env.TIFA_API_URL!, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: process.env.TIFA_MODEL,
-        prompt: finalPrompt,
-        stream: false,
-      }),
-      signal: controller.signal,
-    });
+    try {
+      const tifaPrompt = await getTifaPrompt();
+      const finalPrompt = `${tifaPrompt}\nUser message: ${message}`;
 
-    clearTimeout(timeoutId);
+      const res = await fetch(process.env.TIFA_API_URL!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: process.env.TIFA_MODEL,
+          prompt: finalPrompt,
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Ollama API error: ${res.status} ${res.statusText}`, errorText);
-      return NextResponse.json({ error: "The AI service failed to respond." }, { status: 502 });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Ollama API error: ${res.status} ${res.statusText}`, errorText);
+        return NextResponse.json({ error: "The AI service failed to respond." }, { status: 502 });
+      }
+
+      const json = await res.json();
+      const reply = json.response || "I'm here, but I couldn't think of a reply. Let’s talk markets 💬";
+
+      return NextResponse.json({ reply, model: process.env.TIFA_MODEL });
+
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.error("Tifa API request timed out.");
+        return NextResponse.json({ error: "The AI service took too long to respond." }, { status: 504 });
+      }
+      // For other fetch-related errors
+      console.error("❌ Tifa API fetch error:", err);
+      return NextResponse.json({ error: "An unexpected error occurred while contacting the AI service." }, { status: 500 });
     }
-
-    const json = await res.json();    const reply = json.response || "I'm here, but I couldn't think of a reply. Let’s talk markets 💬";
-
-    return NextResponse.json({ reply, model: process.env.TIFA_MODEL });
-
   } catch (err: unknown) {
-    clearTimeout(timeoutId);
-    if (err instanceof Error && err.name === 'AbortError') {
-      console.error("Tifa API request timed out.");
-      return NextResponse.json({ error: "The AI service took too long to respond." }, { status: 504 });
-    }
-    console.error("❌ Tifa API error:", err);
-    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
+    // For errors during request parsing or other top-level issues
+    console.error("❌ Tifa API critical error:", err);
+    return NextResponse.json({ error: "An unexpected server error occurred." }, { status: 500 });
   }
 }
