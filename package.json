@@ -9,8 +9,9 @@
     "dev": "bash ./scripts/prepare-runtime.sh && next dev -H 0.0.0.0 -p 3100",
     "build": "next build",
     "start": "bash ./start.sh",
-    "lint": "eslint app components pages lib --ext .ts,.tsx",
-    "check": "npm run lint && npm run build"
+    "lint": "eslint app components lib --ext .ts,.tsx",
+    "check": "npm run lint && npm run build",
+    "smoke:api": "bash scripts/smoke-api.sh"
   },
   "dependencies": {
     "framer-motion": "^12.23.24",

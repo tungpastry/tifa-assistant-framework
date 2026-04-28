@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
 import { spawn } from "child_process";
-import fs from "fs/promises";
 import { randomUUID } from "crypto";
 import path from "path";
+import fs from "fs/promises";
+import { jsonError, parseTimeoutMs, safeUnlink } from "@/lib/api";
 
-const PIPER_TIMEOUT = process.env.PIPER_TIMEOUT_MS || "10000";
+const PIPER_TIMEOUT_MS = parseTimeoutMs(process.env.PIPER_TIMEOUT_MS, 10000);
 const MAX_TEXT_LENGTH = 500;
-
-async function safeUnlink(filePath: string) {
-  try {
-    await fs.unlink(filePath);
-  } catch (err: unknown) {
-    if (err instanceof Error && 'code' in err && err.code !== 'ENOENT') {
-      console.error(`Failed to delete temp file: ${filePath}`, err);
-    }
-  }
-}
 
 async function generateVoice(text: string, signal: AbortSignal): Promise<Buffer> {
   const outputFile = path.join("/tmp", `${randomUUID()}.wav`);
@@ -57,15 +48,19 @@ export async function GET(req: Request) {
   const text = (searchParams.get("text") || "").trim();
 
   if (!text) {
-    return NextResponse.json({ error: "Text cannot be empty." }, { status: 400 });
+    return jsonError("VALIDATION_ERROR", "Text cannot be empty.", 400);
   }
 
   if (text.length > MAX_TEXT_LENGTH) {
-    return NextResponse.json({ error: `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters.` }, { status: 413 });
+    return jsonError(
+      "PAYLOAD_TOO_LARGE",
+      `Text exceeds maximum length of ${MAX_TEXT_LENGTH} characters.`,
+      413
+    );
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), parseInt(PIPER_TIMEOUT, 10));
+  const timeoutId = setTimeout(() => controller.abort(), PIPER_TIMEOUT_MS);
 
   try {
     const audioBuffer = await generateVoice(text, controller.signal);
@@ -76,11 +71,11 @@ export async function GET(req: Request) {
     });
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      console.error("Piper process timed out or was aborted.");
-      return NextResponse.json({ error: "Voice generation took too long." }, { status: 504 });
+      return jsonError("TTS_TIMEOUT", "Voice generation took too long.", 504, { retryable: true });
     }
-    console.error("TradeVibe voice generation error:", err);
-    return NextResponse.json({ error: "Failed to generate voice." }, { status: 500 });
+    return jsonError("TTS_GENERATION_FAILED", "Failed to generate voice.", 500, {
+      details: err instanceof Error ? err.message : String(err),
+    });
   } finally {
     clearTimeout(timeoutId);
   }

@@ -64,11 +64,18 @@ Proxies a chat message to the Tifa AI assistant (local LLM). This is a simple, n
       "model": "string (Name of the model used)"
     }
     ```
-- **Error Responses:**
-  - `400 Bad Request`: Invalid JSON, or message is empty.
-  - `413 Payload Too Large`: Message exceeds the maximum character limit.
-  - `502 Bad Gateway`: The upstream AI service (Ollama) returned an error.
-  - `504 Gateway Timeout`: The AI service took too long to respond.
+- **Error Responses:** All error responses now follow the standardized error envelope:
+  ```json
+  {
+    "error": {
+      "code": "ERROR_CODE",
+      "message": "A descriptive error message.",
+      "request_id": "uuid",
+      "retryable": false
+    }
+  }
+  ```
+  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `UPSTREAM_AI_ERROR` (502), `AI_TIMEOUT` (504).
 
 ## `GET /api/voice?text={text}`
 
@@ -87,7 +94,25 @@ Generates audio from text using the local Piper TTS engine.
       "audio": "string (base64 WAV audio data)"
     }
     ```
-- **Error Responses:**
-  - `400 Bad Request`: The `text` parameter is empty.
-  - `413 Payload Too Large`: The `text` exceeds the maximum character limit.
-  - `504 Gateway Timeout`: Voice generation took too long to complete.
+- **Error Responses:** Uses the standardized error envelope.
+  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `TTS_TIMEOUT` (504), `TTS_GENERATION_FAILED` (500).
+
+## `GET /api/health`
+
+Performs a health check on the service and its dependencies (runtime directories, Ollama, Piper).
+
+- **Success Response (200 OK or 503 Service Unavailable):**
+  - **Description:** Returns a JSON object with the overall system status and details for each component check. The HTTP status is `200` if the overall status is `ok` or `degraded`, and `503` if it is `down`.
+  - **Shape:**
+    ```json
+    {
+      "status": "ok" | "degraded" | "down",
+      "service": "tradevibe",
+      "timestamp": "ISO 8601 string",
+      "checks": {
+        "runtime": { "status": "ok", "details": { ... } },
+        "ollama": { "status": "ok", "details": { ... } },
+        "piper": { "status": "ok", "details": { ... } }
+      }
+    }
+    ```

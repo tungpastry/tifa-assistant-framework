@@ -57,6 +57,12 @@ npm run build
 npm run start
 ```
 
+### Testing
+You can run a quick set of API smoke tests to verify your local endpoints are responding correctly to validation checks.
+```bash
+npm run smoke:api
+```
+
 ## Documentation
 For detailed technical documentation, please refer to the `docs/` directory:
 - [Architecture](docs/architecture.md)
