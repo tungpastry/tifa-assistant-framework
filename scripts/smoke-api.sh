@@ -30,6 +30,19 @@ assert_status() {
   fi
 }
 
+extract_json_field() {
+  local file_path=$1
+  local field_name=$2
+
+  node -e "
+const fs = require('fs');
+const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+const value = data[process.argv[2]];
+if (typeof value !== 'string' || value.length === 0) process.exit(1);
+process.stdout.write(value);
+" "$file_path" "$field_name"
+}
+
 # --- Health Check ---
 echo "1. Health Endpoint"
 echo -n "Checking /api/health..."
@@ -72,9 +85,18 @@ assert_status "GET /api/voice (Empty Text)" "400" "${BASE_URL}/api/voice?text="
 assert_status "GET /api/voice (Too Long)" "413" "${BASE_URL}/api/voice?text=${LONG_TEXT}"
 echo ""
 
+# --- Voice Job API Validation ---
+echo "5. Voice Job API Validation"
+assert_status "POST /api/voice/jobs (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"text":"hello"' "${BASE_URL}/api/voice/jobs"
+assert_status "POST /api/voice/jobs (Empty Text)" "400" -X POST -H "Content-Type: application/json" -d '{"text":""}' "${BASE_URL}/api/voice/jobs"
+assert_status "POST /api/voice/jobs (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${LONG_TEXT}\"}" "${BASE_URL}/api/voice/jobs"
+assert_status "GET /api/voice/jobs/nonexistent_job" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job"
+assert_status "GET /api/voice/jobs/nonexistent_job/audio" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job/audio"
+echo ""
+
 
 if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
-  echo "5. Live API Checks (RUN_LIVE_SMOKE=1)"
+  echo "6. Live API Checks (RUN_LIVE_SMOKE=1)"
   assert_status "POST /api/tifa (Live)" "200" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa"}' "${BASE_URL}/api/tifa"
   assert_status "GET /api/voice (Live)" "200" "${BASE_URL}/api/voice?text=Hello"
 
@@ -87,14 +109,56 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
     echo " ❌ FAIL (Expected 200, got $status_stream)"
     exit 1
   fi
+
+  echo -n "Checking POST /api/voice/jobs (Live)..."
+  voice_job_response=$(mktemp)
+  voice_job_status=$(curl -s -o "$voice_job_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"text":"Hello"}' "${BASE_URL}/api/voice/jobs")
+  if [[ "$voice_job_status" == "200" || "$voice_job_status" == "202" ]]; then
+    job_id=$(extract_json_field "$voice_job_response" "job_id")
+    echo " ✅ OK ($voice_job_status, $job_id)"
+  else
+    echo " ❌ FAIL (Expected 200 or 202, got $voice_job_status)"
+    rm -f "$voice_job_response"
+    exit 1
+  fi
+  rm -f "$voice_job_response"
+
+  assert_status "GET /api/voice/jobs/{jobId} (Live)" "200" "${BASE_URL}/api/voice/jobs/${job_id}"
+
+  echo -n "Checking GET /api/voice/jobs/{jobId}/audio (Live)..."
+  audio_file="/tmp/tradevibe-voice-job-smoke.wav"
+  audio_status=$(curl -s -o "$audio_file" -w "%{http_code}" "${BASE_URL}/api/voice/jobs/${job_id}/audio")
+  if [[ "$audio_status" != "200" ]]; then
+    echo " ❌ FAIL (Expected 200, got $audio_status)"
+    rm -f "$audio_file"
+    exit 1
+  fi
+  if [[ ! -s "$audio_file" ]]; then
+    echo " ❌ FAIL (Audio file missing or empty)"
+    rm -f "$audio_file"
+    exit 1
+  fi
+  if command -v file >/dev/null 2>&1; then
+    if file "$audio_file" | grep -qi "WAVE audio"; then
+      echo " ✅ OK (audio/wav)"
+    else
+      echo " ❌ FAIL (Generated file is not WAV audio)"
+      file "$audio_file"
+      rm -f "$audio_file"
+      exit 1
+    fi
+  else
+    echo " ✅ OK (non-empty audio file)"
+  fi
+  rm -f "$audio_file"
   echo ""
 else
-    echo "5. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+    echo "6. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
 fi
 
 if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   echo ""
-  echo "6. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "7. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
   echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
 
   # Test Tifa rate limit
@@ -124,7 +188,7 @@ if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   fi
 else
     echo ""
-    echo "6. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
+    echo "7. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 

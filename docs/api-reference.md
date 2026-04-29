@@ -986,7 +986,8 @@ Current smoke coverage:
 | Tifa non-streaming | invalid JSON, empty message, too-long message |
 | Tifa streaming | invalid JSON, empty message, too-long message |
 | Voice legacy | empty text, too-long text |
-| Live optional | live `/api/tifa`, `/api/tifa/stream`, `/api/voice` |
+| Voice jobs | invalid JSON, empty text, too-long text, missing job status, missing job audio |
+| Live optional | live `/api/tifa`, `/api/tifa/stream`, `/api/voice`, `/api/voice/jobs`, job status, and job audio |
 | Rate-limit optional | Tifa and voice 429 checks |
 
 Optional live smoke:
@@ -999,14 +1000,6 @@ Optional rate-limit smoke:
 
 ```bash
 RUN_RATE_LIMIT_SMOKE=1 npm run smoke:api
-```
-
-Recommended future smoke additions:
-
-```text
-POST /api/voice/jobs
-GET /api/voice/jobs/{jobId}
-GET /api/voice/jobs/{jobId}/audio
 ```
 
 ---

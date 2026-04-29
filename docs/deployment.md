@@ -514,6 +514,7 @@ This checks:
 - `/api/tifa` validation
 - `/api/tifa/stream` validation
 - `/api/voice` validation
+- `/api/voice/jobs` validation, including missing job and missing audio checks
 
 Run live smoke tests:
 
@@ -521,7 +522,7 @@ Run live smoke tests:
 RUN_LIVE_SMOKE=1 npm run smoke:api
 ```
 
-This additionally checks live local AI/TTS behavior.
+This additionally checks live local AI/TTS behavior, including the voice job flow and generated WAV download.
 
 Run rate-limit smoke tests:
 
