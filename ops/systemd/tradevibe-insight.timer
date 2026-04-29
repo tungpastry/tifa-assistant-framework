@@ -1,8 +1,8 @@
 [Unit]
-Description=Run TradeVibe insight pipeline daily at 7am
+Description=Run TradeVibe insight pipeline every day at 08:00
 
 [Timer]
-OnCalendar=*-*-* 07:00:00
+OnCalendar=*-*-* 08:00:00
 Persistent=true
 Unit=tradevibe-insight.service
 

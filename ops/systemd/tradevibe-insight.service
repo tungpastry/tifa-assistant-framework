@@ -1,12 +1,13 @@
 [Unit]
 Description=TradeVibe Daily Insight Pipeline
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=nexus
 WorkingDirectory=/home/nexus/projects/tradevibe-org
-Environment="TRADEVIBE_RUNTIME_DIR=runtime"
+Environment=PYTHONUNBUFFERED=1
+Environment=TRADEVIBE_RUNTIME_DIR=/home/nexus/projects/tradevibe-org/runtime
+Environment=TRADEVIBE_TIMEZONE=Asia/Ho_Chi_Minh
 ExecStart=/bin/bash /home/nexus/projects/tradevibe-org/insight_engine/tradevibe_runner.sh
-
-[Install]
-WantedBy=multi-user.target
