@@ -132,14 +132,16 @@ export async function generateVoiceToCache(
   const PIPER_TIMEOUT_MS = parseTimeoutMs(process.env.PIPER_TIMEOUT_MS, 10000);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PIPER_TIMEOUT_MS);
+  let tempFile: string | null = null;
 
   try {
-    const tempFile = path.join("/tmp", `tts_${crypto.randomUUID()}.wav`);
+    const currentTempFile = path.join(getAudioCacheDir(), `${cacheKey}.${crypto.randomUUID()}.tmp.wav`);
+    tempFile = currentTempFile;
 
     await new Promise<void>((resolve, reject) => {
       const piperProcess = spawn(
         identity.piperBin,
-        ["--model", identity.modelPath, "--output_file", tempFile],
+        ["--model", identity.modelPath, "--output_file", currentTempFile],
         { signal: controller.signal }
       );
 
@@ -161,6 +163,7 @@ export async function generateVoiceToCache(
 
     // Move from temp to cache
     await fs.rename(tempFile, cachePath);
+    tempFile = null;
 
     // Write meta
     await writeAudioCacheMeta(cacheKey, {
@@ -189,6 +192,9 @@ export async function generateVoiceToCache(
     throw err;
   } finally {
     clearTimeout(timeoutId);
+    if (tempFile) {
+      await fs.unlink(tempFile).catch(() => undefined);
+    }
   }
 
   return jobRecord;
