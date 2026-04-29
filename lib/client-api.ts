@@ -212,3 +212,157 @@ export async function streamTifaReply(options: {
 
   return { text: fullText, completed: receivedDone };
 }
+
+export type VoiceJobStatus = "queued" | "processing" | "ready" | "failed";
+
+export interface VoiceJobResponse {
+  status: VoiceJobStatus;
+  cache_hit?: boolean;
+  job_id: string;
+  audio_url: string | null;
+  voice?: string;
+  model?: string;
+  error?: string | null;
+}
+
+export async function createVoiceJob(
+  text: string,
+  options?: { voice?: string; format?: string; signal?: AbortSignal }
+): Promise<VoiceJobResponse> {
+  const res = await fetch("/api/voice/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      voice: options?.voice ?? "tifa-default",
+      format: options?.format ?? "wav",
+    }),
+    signal: options?.signal,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Failed to create voice job."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  const data = await res.json();
+  if (!data.status || !data.job_id) {
+    throw new ApiRequestError("Invalid voice job response.");
+  }
+  return data as VoiceJobResponse;
+}
+
+export async function getVoiceJob(
+  jobId: string,
+  options?: { signal?: AbortSignal }
+): Promise<VoiceJobResponse> {
+  const res = await fetch(`/api/voice/jobs/${encodeURIComponent(jobId)}`, {
+    signal: options?.signal,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Failed to get voice job status."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  return (await res.json()) as VoiceJobResponse;
+}
+
+export async function playAudioUrl(audioUrl: string): Promise<void> {
+  const player = new Audio(audioUrl);
+  player.preload = "auto";
+  return new Promise((resolve, reject) => {
+    player.addEventListener("ended", () => resolve());
+    player.addEventListener("error", () => reject(player.error));
+    player.play().catch(reject);
+  });
+}
+
+export async function playVoiceJobAudio(
+  text: string,
+  options?: {
+    voice?: string;
+    format?: string;
+    signal?: AbortSignal;
+    pollIntervalMs?: number;
+    maxPollAttempts?: number;
+  }
+): Promise<{ used: "job"; cacheHit?: boolean; jobId: string }> {
+  let response = await createVoiceJob(text, options);
+
+  if (response.status === "ready" && response.audio_url) {
+    await playAudioUrl(response.audio_url);
+    return { used: "job", cacheHit: response.cache_hit, jobId: response.job_id };
+  }
+
+  const pollInterval = options?.pollIntervalMs ?? 1000;
+  const maxAttempts = options?.maxPollAttempts ?? 10;
+  let attempts = 0;
+
+  while (
+    (response.status === "queued" || response.status === "processing") &&
+    attempts < maxAttempts
+  ) {
+    await new Promise((r) => setTimeout(r, pollInterval));
+    response = await getVoiceJob(response.job_id, { signal: options?.signal });
+    attempts++;
+
+    if (response.status === "ready" && response.audio_url) {
+      await playAudioUrl(response.audio_url);
+      return { used: "job", cacheHit: response.cache_hit, jobId: response.job_id };
+    }
+  }
+
+  if (response.status === "failed") {
+    throw new ApiRequestError(response.error || "Voice job failed.");
+  }
+
+  if (response.status === "ready" && !response.audio_url) {
+    throw new ApiRequestError("Voice job is ready but has no audio URL.");
+  }
+
+  throw new ApiRequestError("Voice job did not finish in time.");
+}
+
+export async function playLegacyVoice(
+  text: string,
+  options?: { signal?: AbortSignal }
+): Promise<void> {
+  const res = await fetch(`/api/voice?text=${encodeURIComponent(text)}`, {
+    signal: options?.signal,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Legacy voice fetch failed."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  const data = await res.json();
+  if (data.audio) {
+    await playBase64Audio(data.audio, "audio/wav");
+  } else {
+    throw new ApiRequestError("Legacy voice endpoint returned no audio.");
+  }
+}
+
+export async function playTifaVoice(
+  text: string,
+  options?: { voice?: string; signal?: AbortSignal }
+): Promise<{ used: "job" | "legacy"; cacheHit?: boolean; jobId?: string }> {
+  try {
+    return await playVoiceJobAudio(text, options);
+  } catch (err) {
+    console.warn("Cached voice job failed, falling back to legacy voice endpoint:", err);
+    await playLegacyVoice(text, options);
+    return { used: "legacy" };
+  }
+}

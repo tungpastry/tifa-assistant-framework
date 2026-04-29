@@ -5,10 +5,10 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, MessageCircle, Volume2, VolumeX } from "lucide-react";
 import {
-  playBase64Audio,
   streamTifaReply,
   sendTifaMessage,
   ApiRequestError,
+  playTifaVoice,
 } from "@/lib/client-api";
 
 interface Message {
@@ -59,16 +59,8 @@ export default function ChatTifa({ mood }: { mood: string }) {
 
     if (voiceEnabled && !greetingPlayedRef.current) {
       greetingPlayedRef.current = true;
-      fetch(`/api/voice?text=${encodeURIComponent(greetText)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.audio && isMounted.current) {
-            playBase64Audio(data.audio, "audio/wav").catch((err) =>
-              console.warn("🎧 Greeting voice playback error:", err)
-            );
-          }
-        })
-        .catch((err) => console.error("🎧 Greeting voice fetch error:", err));
+      playTifaVoice(greetText, { voice: "tifa-default" })
+        .catch((err) => console.warn("🎧 Greeting voice playback error:", err));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -146,16 +138,8 @@ export default function ChatTifa({ mood }: { mood: string }) {
         setTyping(false);
         setSending(false);
         if (voiceEnabled && shouldPlayVoice && finalReply.trim()) {
-          fetch(`/api/voice?text=${encodeURIComponent(finalReply)}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.audio && isMounted.current) {
-                playBase64Audio(data.audio, "audio/wav").catch((err) =>
-                  console.warn("🎙️ Reply voice playback error:", err)
-                );
-              }
-            })
-            .catch((err) => console.warn("🎙️ Reply voice fetch error:", err));
+          playTifaVoice(finalReply, { voice: "tifa-default" })
+            .catch((err) => console.warn("🎙️ Reply voice playback error:", err));
         }
       }
     }
