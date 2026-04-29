@@ -20,3 +20,5 @@ Voice: Piper TTS with cache-first voice jobs and legacy fallback
 AI backend: local Ollama-compatible endpoint
 Deployment: single-node self-hosted foundation
 ```
+
+Runtime cleanup is available through `npm run cleanup:runtime`. The command is a dry-run by default and only scopes deletion to `runtime/audio_cache`, `runtime/tts_jobs`, and `runtime/logs`.

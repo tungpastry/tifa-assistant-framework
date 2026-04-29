@@ -181,6 +181,7 @@ Important scripts:
 | `npm run lint` | Run ESLint |
 | `npm run check` | Run lint and build |
 | `npm run smoke:api` | Run API smoke tests |
+| `npm run cleanup:runtime` | Dry-run cleanup for runtime cache, jobs, and logs |
 
 ---
 
@@ -534,7 +535,39 @@ Use rate-limit smoke carefully. It assumes low limits or repeated requests and m
 
 ---
 
-## 15. Manual API Checks
+## 15. Runtime Cleanup
+
+Runtime cleanup is local-first and dry-run by default. It only targets:
+
+- `runtime/audio_cache/`
+- `runtime/tts_jobs/`
+- `runtime/logs/`
+
+It never removes `runtime/latest.json` or `runtime/daily_vibes/*`.
+
+Run the default dry-run:
+
+```bash
+npm run cleanup:runtime
+```
+
+Delete files for real:
+
+```bash
+TRADEVIBE_CLEANUP_DRY_RUN=0 npm run cleanup:runtime
+```
+
+Retention defaults:
+
+```text
+TRADEVIBE_AUDIO_CACHE_RETENTION_DAYS=30
+TRADEVIBE_TTS_JOB_RETENTION_DAYS=7
+TRADEVIBE_LOG_RETENTION_DAYS=30
+```
+
+---
+
+## 16. Manual API Checks
 
 ### Daily Vibe
 
@@ -586,7 +619,7 @@ ls -lh /tmp/tifa-voice.wav
 
 ---
 
-## 16. Logs and Debug Commands
+## 17. Logs and Debug Commands
 
 ### Next.js / PM2
 
