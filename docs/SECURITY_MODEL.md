@@ -111,3 +111,11 @@ For SaaS mode, generated audio should move to object storage with lifecycle poli
 - Voice job creation and failures.
 - Rate limit and budget limit events.
 
+## Operational Security Readiness
+
+SaaS health and observability should distinguish required local dependencies from optional SaaS dependencies:
+
+- Required local checks can fail readiness when `down`.
+- Optional SaaS checks should report `disabled` when not configured.
+- Optional checks should become `degraded` or `down` only when explicitly enabled.
+- Security-sensitive telemetry should use request IDs and metadata instead of raw secrets or full private payloads.

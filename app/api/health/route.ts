@@ -9,12 +9,14 @@ import {
   getChatSessionsDir,
 } from "@/lib/runtime";
 import { parseTimeoutMs } from "@/lib/api";
+import { createPostgresFinancialConnector } from "@/lib/data-connectors/postgres";
 
-type Status = "ok" | "degraded" | "down";
+type Status = "ok" | "degraded" | "disabled" | "down";
 
 interface Check {
   status: Status;
   details: Record<string, unknown>;
+  required?: boolean;
 }
 
 async function checkRuntime(): Promise<Check> {
@@ -37,13 +39,13 @@ async function checkRuntime(): Promise<Check> {
     details.error = error instanceof Error ? error.message : String(error);
   }
 
-  return { status, details };
+  return { status, details, required: true };
 }
 
 async function checkOllama(): Promise<Check> {
   const ollamaUrl = process.env.OLLAMA_URL;
   if (!ollamaUrl) {
-    return { status: "degraded", details: { error: "OLLAMA_URL not configured." } };
+    return { status: "degraded", details: { error: "OLLAMA_URL not configured." }, required: true };
   }
 
   const controller = new AbortController();
@@ -54,13 +56,13 @@ async function checkOllama(): Promise<Check> {
     const res = await fetch(`${ollamaUrl}/api/tags`, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) {
-      return { status: "down", details: { url: ollamaUrl, error: `API returned ${res.status}` } };
+      return { status: "down", details: { url: ollamaUrl, error: `API returned ${res.status}` }, required: true };
     }
     const data = await res.json();
-    return { status: "ok", details: { url: ollamaUrl, models: data.models.length } };
+    return { status: "ok", details: { url: ollamaUrl, models: data.models.length }, required: true };
   } catch (error) {
     clearTimeout(timeoutId);
-    return { status: "down", details: { url: ollamaUrl, error: error instanceof Error ? error.message : String(error) } };
+    return { status: "down", details: { url: ollamaUrl, error: error instanceof Error ? error.message : String(error) }, required: true };
   }
 }
 
@@ -71,7 +73,7 @@ async function checkPiper(): Promise<Check> {
   let status: Status = "ok";
 
   if (!piperBin || !piperModel) {
-    return { status: "degraded", details: { ...details, error: "PIPER_BIN or PIPER_MODEL not configured." } };
+    return { status: "degraded", details: { ...details, error: "PIPER_BIN or PIPER_MODEL not configured." }, required: true };
   }
 
   try {
@@ -88,7 +90,65 @@ async function checkPiper(): Promise<Check> {
     details.model_error = `File not found or not readable: ${piperModel}`;
   }
 
-  return { status, details };
+  return { status, details, required: true };
+}
+
+async function checkPostgresConnector(): Promise<Check> {
+  const connector = createPostgresFinancialConnector();
+  const health = await connector.health();
+
+  return {
+    status: health.status,
+    details: health.details ?? {},
+    required: false,
+  };
+}
+
+async function checkRedis(): Promise<Check> {
+  if (process.env.TIFA_REDIS_ENABLED !== "1") {
+    return {
+      status: "disabled",
+      details: { reason: "TIFA_REDIS_ENABLED is not 1." },
+      required: false,
+    };
+  }
+
+  return {
+    status: process.env.TIFA_REDIS_URL ? "degraded" : "down",
+    details: {
+      url_configured: Boolean(process.env.TIFA_REDIS_URL),
+      note: "Redis health is a placeholder until a Redis client is wired.",
+    },
+    required: false,
+  };
+}
+
+async function checkProviderGateway(): Promise<Check> {
+  return {
+    status: "ok",
+    details: {
+      scaffold: true,
+      policies: ["local-first", "cloud-first", "cost-aware", "privacy-first"],
+      current_tifa_path: "TIFA_API_URL compatibility route",
+    },
+    required: false,
+  };
+}
+
+async function checkTextToSql(): Promise<Check> {
+  if (process.env.TIFA_TEXT_TO_SQL_ENABLED !== "1") {
+    return {
+      status: "disabled",
+      details: { reason: "TIFA_TEXT_TO_SQL_ENABLED is not 1." },
+      required: false,
+    };
+  }
+
+  return {
+    status: "ok",
+    details: { scaffold: true, execution: "guarded" },
+    required: false,
+  };
 }
 
 export async function GET() {
@@ -96,11 +156,16 @@ export async function GET() {
     checkRuntime(),
     checkOllama(),
     checkPiper(),
+    checkPostgresConnector(),
+    checkRedis(),
+    checkProviderGateway(),
+    checkTextToSql(),
   ]);
 
-  const [runtime, ollama, piper] = checks;
+  const [runtime, ollama, piper, postgres, redis, providerGateway, textToSql] = checks;
+  const requiredChecks = checks.filter((check) => check.required);
 
-  const overallStatus: Status = checks.some(c => c.status === "down")
+  const overallStatus: Status = requiredChecks.some(c => c.status === "down")
     ? "down"
     : checks.some(c => c.status === "degraded")
     ? "degraded"
@@ -113,7 +178,15 @@ export async function GET() {
       status: overallStatus,
       service: "tradevibe",
       timestamp: new Date().toISOString(),
-      checks: { runtime, ollama, piper },
+      checks: {
+        runtime,
+        ollama,
+        piper,
+        postgres,
+        redis,
+        provider_gateway: providerGateway,
+        text_to_sql: textToSql,
+      },
     },
     { status: httpStatus }
   );

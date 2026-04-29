@@ -24,3 +24,16 @@ Deployment: single-node self-hosted foundation
 Runtime cleanup is available through `npm run cleanup:runtime`. The command is a dry-run by default and only scopes deletion to `runtime/audio_cache`, `runtime/tts_jobs`, and `runtime/logs`.
 
 Local async TTS processing is available through `npm run tts:worker:once` for a single pass or `npm run tts:worker` for a loop. The worker only reads queued jobs from `runtime/tts_jobs` and writes generated WAV/cache metadata under `runtime/audio_cache`.
+
+## 2. SaaS Framework Readiness
+
+The repository now includes additive Tifa Assistant Framework scaffolds. Gemini CLI may inspect and update them, but must preserve local TradeVibe compatibility.
+
+Current readiness surfaces:
+
+- `/api/health` reports required local checks plus optional SaaS categories.
+- `docs/OBSERVABILITY.md` defines target metrics and audit events.
+- `docs/OPS_SOP.md` defines validation and incident triage commands.
+- `sql/tifa_saas_schema.sql` is a schema draft only and is not applied in local mode.
+
+Optional SaaS checks may report `disabled`. That is healthy for local-first TradeVibe unless strict SaaS mode is intentionally enabled.
