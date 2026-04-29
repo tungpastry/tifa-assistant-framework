@@ -153,16 +153,15 @@ export async function streamTifaReply(options: {
   }
 
   let fullText = "";
-  let done = false;
+  let receivedDone = false;
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (!done) {
+  while (true) {
     const { value, done: readerDone } = await reader.read();
     if (readerDone) {
-      done = true;
       break;
     }
 
@@ -175,26 +174,35 @@ export async function streamTifaReply(options: {
         const eventMatch = chunk.match(/event: (.*)/);
         const dataMatch = chunk.match(/data: (.*)/);
         if (eventMatch && dataMatch) {
-          const eventType = eventMatch[1];
-          const data = JSON.parse(dataMatch[1]);
+          let data: unknown;
+          try {
+            data = JSON.parse(dataMatch[1]);
+          } catch {
+            console.error("Failed to parse SSE data chunk:", dataMatch[1]);
+            throw new ApiRequestError("Failed to parse Tifa stream event.");
+          }
 
+          const eventType = eventMatch[1];
+          const eventData = data as { [key: string]: unknown };
           switch (eventType) {
             case "start":
-              options.onStart?.(data.model);
+              options.onStart?.(eventData.model as string | undefined);
               break;
             case "delta":
-              fullText += data.text;
-              options.onDelta(data.text);
+              if(typeof eventData.text === "string") {
+                fullText += eventData.text;
+                options.onDelta(eventData.text);
+              }
               break;
             case "done":
-              done = true;
-              options.onDone?.(data.model);
-              break;
+              receivedDone = true;
+              options.onDone?.(eventData.model as string | undefined);
+              return { text: fullText, completed: receivedDone }; // End of stream
             case "error":
-              options.onError?.(data.message, data.code);
-              // Stop processing on stream error
-              done = true; 
-              break;
+              const message = typeof eventData.message === "string" ? eventData.message : "Tifa stream failed.";
+              const code = typeof eventData.code === "string" ? eventData.code : undefined;
+              options.onError?.(message, code);
+              throw new ApiRequestError(message, { code });
           }
         }
       }
@@ -202,5 +210,5 @@ export async function streamTifaReply(options: {
     buffer = lines[lines.length - 1];
   }
 
-  return { text: fullText, completed: true };
+  return { text: fullText, completed: receivedDone };
 }

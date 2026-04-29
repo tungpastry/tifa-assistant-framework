@@ -98,30 +98,38 @@ export default function ChatTifa({ mood }: { mood: string }) {
     
     abortControllerRef.current = new AbortController();
     let finalReply = "";
+    let streamedText = "";
+    let shouldPlayVoice = false;
 
     try {
-      let streamedText = "";
-      await streamTifaReply({
+      const result = await streamTifaReply({
         message: outgoingMessage,
         mood: mood.toLowerCase(),
         signal: abortControllerRef.current.signal,
         onDelta: (delta) => {
-          if (typing) setTyping(false); // Stop typing dots on first delta
+          setTyping(false);
           streamedText += delta;
           updateLastTifaMessage(streamedText);
         },
       });
-      finalReply = streamedText;
+      finalReply = result.text;
+      if (result.completed && finalReply.trim()) {
+        shouldPlayVoice = true;
+      }
     } catch (streamErr) {
       console.error("Stream failed, considering fallback:", streamErr);
-      if (finalReply.trim()) {
+      if (streamedText.trim()) {
+        finalReply = streamedText;
         setError("The stream was interrupted. The response may be incomplete.");
       } else if (shouldFallback(streamErr)) {
         try {
           console.log("Attempting non-streaming fallback...");
-          setTyping(true); // show typing for fallback
+          setTyping(true);
           finalReply = await sendTifaMessage(outgoingMessage, mood.toLowerCase());
           updateLastTifaMessage(finalReply);
+          if (finalReply.trim()) {
+            shouldPlayVoice = true;
+          }
         } catch (fallbackErr) {
           console.error("Fallback also failed:", fallbackErr);
           const message = fallbackErr instanceof Error ? fallbackErr.message : "An unknown error occurred.";
@@ -137,7 +145,7 @@ export default function ChatTifa({ mood }: { mood: string }) {
       if (isMounted.current) {
         setTyping(false);
         setSending(false);
-        if (voiceEnabled && finalReply.trim()) {
+        if (voiceEnabled && shouldPlayVoice && finalReply.trim()) {
           fetch(`/api/voice?text=${encodeURIComponent(finalReply)}`)
             .then((res) => res.json())
             .then((data) => {
