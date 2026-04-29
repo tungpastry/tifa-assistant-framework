@@ -45,6 +45,12 @@ fi
 
 FULL_PROMPT="$(cat "$ROOT/bootstrap.txt")
 
+SYSTEM PROMPT:
+$(cat "$ROOT/system_prompt.txt")
+
+LOAD CONTEXT MANIFEST:
+$(cat "$ROOT/load_context.txt")
+
 USER TASK:
 $USER_PROMPT"
 
