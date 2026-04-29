@@ -9,8 +9,8 @@ import {
   MAX_TTS_TEXT_LENGTH,
   CreateVoiceJobInput,
   createTtsCacheKey,
+  createQueuedVoiceJob,
   readAudioCacheMeta,
-  generateVoiceToCache,
   getVoiceIdentity,
   writeVoiceJob,
   VoiceJobRecord,
@@ -86,6 +86,7 @@ export async function POST(req: Request) {
         error: null,
         voice,
         model,
+        input: null,
         created_at: now,
         updated_at: now,
       };
@@ -102,27 +103,20 @@ export async function POST(req: Request) {
       });
     }
 
-    // Cache miss - generate immediately for this slice
     const jobId = `tts_${randomUUID()}`;
-    
-    try {
-      const jobRecord = await generateVoiceToCache({ ...body, text }, jobId);
-      return NextResponse.json({
-        status: jobRecord.status,
+    const jobRecord = await createQueuedVoiceJob({ ...body, text }, jobId);
+
+    return NextResponse.json(
+      {
+        status: "queued",
         cache_hit: false,
         job_id: jobRecord.job_id,
-        audio_url: jobRecord.audio_url,
+        audio_url: null,
         voice: jobRecord.voice,
         model: jobRecord.model,
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return jsonError("TTS_TIMEOUT", "Voice generation took too long.", 504, { retryable: true });
-      }
-      return jsonError("TTS_GENERATION_FAILED", "Failed to generate voice.", 500, {
-        details: err instanceof Error ? err.message : String(err),
-      });
-    }
+      },
+      { status: 202 }
+    );
 
   } catch (err: unknown) {
     return jsonError("INTERNAL_ERROR", "An unexpected server error occurred.", 500, {

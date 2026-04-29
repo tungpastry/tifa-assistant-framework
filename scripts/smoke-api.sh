@@ -112,10 +112,12 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
 
   echo -n "Checking POST /api/voice/jobs (Live)..."
   voice_job_response=$(mktemp)
-  voice_job_status=$(curl -s -o "$voice_job_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"text":"Hello"}' "${BASE_URL}/api/voice/jobs")
+  voice_job_text="Hello voice job smoke $(date +%s)"
+  voice_job_status=$(curl -s -o "$voice_job_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${voice_job_text}\"}" "${BASE_URL}/api/voice/jobs")
   if [[ "$voice_job_status" == "200" || "$voice_job_status" == "202" ]]; then
     job_id=$(extract_json_field "$voice_job_response" "job_id")
-    echo " ✅ OK ($voice_job_status, $job_id)"
+    job_status=$(extract_json_field "$voice_job_response" "status")
+    echo " ✅ OK ($voice_job_status, $job_id, $job_status)"
   else
     echo " ❌ FAIL (Expected 200 or 202, got $voice_job_status)"
     rm -f "$voice_job_response"
@@ -124,6 +126,45 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   rm -f "$voice_job_response"
 
   assert_status "GET /api/voice/jobs/{jobId} (Live)" "200" "${BASE_URL}/api/voice/jobs/${job_id}"
+
+  if [[ "$job_status" == "queued" || "$job_status" == "processing" ]]; then
+    echo -n "Checking TTS worker once..."
+    if npm run -s tts:worker:once >/tmp/tradevibe-tts-worker-smoke.log 2>&1; then
+      echo " ✅ OK"
+    else
+      echo " ❌ FAIL"
+      cat /tmp/tradevibe-tts-worker-smoke.log
+      rm -f /tmp/tradevibe-tts-worker-smoke.log
+      exit 1
+    fi
+    rm -f /tmp/tradevibe-tts-worker-smoke.log
+  fi
+
+  echo -n "Checking voice job ready status..."
+  job_ready="0"
+  job_status_file=$(mktemp)
+  for _ in {1..10}; do
+    curl -s -o "$job_status_file" "${BASE_URL}/api/voice/jobs/${job_id}"
+    current_status=$(extract_json_field "$job_status_file" "status")
+    if [[ "$current_status" == "ready" ]]; then
+      job_ready="1"
+      break
+    fi
+    if [[ "$current_status" == "failed" ]]; then
+      echo " ❌ FAIL (job failed)"
+      cat "$job_status_file"
+      rm -f "$job_status_file"
+      exit 1
+    fi
+    sleep 1
+  done
+  rm -f "$job_status_file"
+  if [[ "$job_ready" == "1" ]]; then
+    echo " ✅ OK (ready)"
+  else
+    echo " ❌ FAIL (job did not become ready)"
+    exit 1
+  fi
 
   echo -n "Checking GET /api/voice/jobs/{jobId}/audio (Live)..."
   audio_file="/tmp/tradevibe-voice-job-smoke.wav"

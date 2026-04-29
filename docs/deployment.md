@@ -182,6 +182,8 @@ Important scripts:
 | `npm run check` | Run lint and build |
 | `npm run smoke:api` | Run API smoke tests |
 | `npm run cleanup:runtime` | Dry-run cleanup for runtime cache, jobs, and logs |
+| `npm run tts:worker` | Run the local TTS worker loop |
+| `npm run tts:worker:once` | Process queued TTS jobs once and exit |
 
 ---
 
@@ -700,16 +702,28 @@ Database-backed quota system
 
 ### Voice Jobs
 
-Voice jobs are currently cache-first and job-shaped, but cache misses are still generated synchronously inside the request.
+Voice jobs are cache-first and local async. Cache hits return `ready`; cache misses return `queued` and are processed by the local worker.
 
-Future production target:
+Local worker flow:
 
 ```text
 POST /api/voice/jobs
 → write queued job
-→ background worker generates audio
+→ npm run tts:worker processes queued jobs
 → client polls job status
 → client fetches audio
+```
+
+Run one pass:
+
+```bash
+npm run tts:worker:once
+```
+
+Run as a loop:
+
+```bash
+npm run tts:worker
 ```
 
 ### Runtime Cleanup

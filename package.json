@@ -12,7 +12,9 @@
     "lint": "eslint app components lib --ext .ts,.tsx",
     "check": "npm run lint && npm run build",
     "cleanup:runtime": "bash scripts/cleanup-runtime.sh",
-    "smoke:api": "bash scripts/smoke-api.sh"
+    "smoke:api": "bash scripts/smoke-api.sh",
+    "tts:worker": "node scripts/tts-worker.mjs",
+    "tts:worker:once": "node scripts/tts-worker.mjs --once"
   },
   "dependencies": {
     "framer-motion": "^12.23.24",

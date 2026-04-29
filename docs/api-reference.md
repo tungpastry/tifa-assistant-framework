@@ -559,13 +559,13 @@ lib/tts-cache.ts
 
 ## Important Current Behavior
 
-The API is currently **cache-first and job-shaped**, but cache misses are still generated synchronously inside the request.
+The API is **cache-first and async-ready**.
 
 That means:
 
-- Cache hit: fast response.
-- Cache miss: the request waits while Piper generates audio.
-- A true background worker queue is planned for a later implementation slice.
+- Cache hit: returns a `ready` job and `audio_url`.
+- Cache miss: writes a `queued` job and returns immediately.
+- `scripts/tts-worker.mjs` processes queued jobs from the local filesystem.
 
 ## Request Body
 
@@ -645,13 +645,12 @@ POST /api/voice/jobs
 → create cache key
 → no cache metadata found
 → create job_id
-→ write processing job record
-→ spawn Piper
-→ write temporary WAV
-→ move WAV to runtime/audio_cache/<cache_key>.wav
-→ write runtime/audio_cache/<cache_key>.json
-→ update job record to ready
-→ return audio_url
+→ write queued job record
+→ return queued status
+→ worker marks processing
+→ worker spawns Piper
+→ worker writes runtime/audio_cache/<cache_key>.wav
+→ worker updates job record to ready or failed
 ```
 
 ## Success Response
@@ -660,16 +659,30 @@ Status:
 
 ```text
 200 OK
+202 Accepted
 ```
 
-Shape:
+Cache hit shape:
 
 ```json
 {
   "status": "ready",
-  "cache_hit": false,
+  "cache_hit": true,
   "job_id": "tts_uuid",
   "audio_url": "/api/voice/jobs/tts_uuid/audio",
+  "voice": "tifa-default",
+  "model": "en_US-libritts-high.onnx"
+}
+```
+
+Cache miss shape:
+
+```json
+{
+  "status": "queued",
+  "cache_hit": false,
+  "job_id": "tts_uuid",
+  "audio_url": null,
   "voice": "tifa-default",
   "model": "en_US-libritts-high.onnx"
 }
@@ -686,8 +699,9 @@ failed
 
 Current note:
 
-- The route can return `ready` after synchronous generation.
-- `queued` is part of the contract for future async worker support.
+- `POST /api/voice/jobs` returns `ready` on cache hit and `queued` on cache miss.
+- Run `npm run tts:worker:once` for a one-pass local worker.
+- Run `npm run tts:worker` for a loop worker using `TRADEVIBE_TTS_WORKER_INTERVAL_MS`.
 
 ## Error Responses
 
@@ -696,8 +710,6 @@ Current note:
 | 400 | `VALIDATION_ERROR` | Invalid JSON or empty text |
 | 413 | `PAYLOAD_TOO_LARGE` | Text exceeds max length |
 | 429 | `RATE_LIMITED` | Too many voice requests |
-| 504 | `TTS_TIMEOUT` | Piper timed out |
-| 500 | `TTS_GENERATION_FAILED` | Piper failed |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
 
 ---
@@ -1119,16 +1131,16 @@ runtime/tts_jobs/
 
 This is appropriate for local-first deployment but not enough for distributed production.
 
-### 16.2 Voice Jobs Are Not Fully Async Yet
+### 16.2 Voice Jobs Are Local Async
 
-`POST /api/voice/jobs` is cache-first and returns job-shaped responses, but cache misses still generate audio synchronously.
+`POST /api/voice/jobs` is cache-first. Cache misses create queued filesystem jobs under `runtime/tts_jobs/`.
 
-Future target:
+Local worker flow:
 
 ```text
 POST /api/voice/jobs
 → write queued job
-→ background worker generates audio
+→ scripts/tts-worker.mjs generates audio
 → client polls status
 → client fetches audio
 ```

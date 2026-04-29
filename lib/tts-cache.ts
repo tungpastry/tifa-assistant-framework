@@ -20,7 +20,7 @@ export interface CreateVoiceJobResult {
   status: VoiceJobStatus;
   cache_hit: boolean;
   job_id: string;
-  audio_url: string;
+  audio_url: string | null;
   voice: string;
   model: string;
 }
@@ -33,6 +33,7 @@ export interface VoiceJobRecord {
   error: string | null;
   voice: string;
   model: string;
+  input?: CreateVoiceJobInput | null;
   created_at: string;
   updated_at: string;
 }
@@ -90,6 +91,34 @@ export async function writeVoiceJob(job: VoiceJobRecord): Promise<void> {
   await fs.writeFile(jobPath, JSON.stringify(job, null, 2), "utf-8");
 }
 
+export async function createQueuedVoiceJob(
+  input: CreateVoiceJobInput,
+  jobId: string
+): Promise<VoiceJobRecord> {
+  ensureRuntimeDirs();
+  const identity = getVoiceIdentity();
+  const normalizedInput: CreateVoiceJobInput = {
+    ...input,
+    text: normalizeTtsText(input.text),
+  };
+  const now = new Date().toISOString();
+  const jobRecord: VoiceJobRecord = {
+    job_id: jobId,
+    status: "queued",
+    cache_key: createTtsCacheKey(normalizedInput),
+    audio_url: null,
+    error: null,
+    voice: normalizedInput.voice || identity.voice,
+    model: identity.modelName,
+    input: normalizedInput,
+    created_at: now,
+    updated_at: now,
+  };
+
+  await writeVoiceJob(jobRecord);
+  return jobRecord;
+}
+
 export async function readAudioCacheMeta(cacheKey: string): Promise<unknown | null> {
   const metaPath = getAudioCacheMetaPath(cacheKey);
   try {
@@ -123,6 +152,7 @@ export async function generateVoiceToCache(
     error: null,
     voice: input.voice || identity.voice,
     model: identity.modelName,
+    input,
     created_at: now,
     updated_at: now,
   };

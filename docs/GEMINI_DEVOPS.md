@@ -22,3 +22,5 @@ Deployment: single-node self-hosted foundation
 ```
 
 Runtime cleanup is available through `npm run cleanup:runtime`. The command is a dry-run by default and only scopes deletion to `runtime/audio_cache`, `runtime/tts_jobs`, and `runtime/logs`.
+
+Local async TTS processing is available through `npm run tts:worker:once` for a single pass or `npm run tts:worker` for a loop. The worker only reads queued jobs from `runtime/tts_jobs` and writes generated WAV/cache metadata under `runtime/audio_cache`.
