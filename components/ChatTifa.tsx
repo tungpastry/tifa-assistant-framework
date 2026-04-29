@@ -4,11 +4,26 @@ import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, MessageCircle, Volume2, VolumeX } from "lucide-react";
-import { getApiErrorMessage, playBase64Audio } from "@/lib/client-api";
+import {
+  playBase64Audio,
+  streamTifaReply,
+  sendTifaMessage,
+  ApiRequestError,
+} from "@/lib/client-api";
 
 interface Message {
   sender: "tifa" | "user";
   text: string;
+}
+
+// Helper to determine if a fallback to non-streaming is appropriate
+function shouldFallback(err: unknown): boolean {
+  if (err instanceof ApiRequestError) {
+    // Don't fallback on user errors like validation or rate limits
+    return err.status ? err.status >= 500 : true;
+  }
+  // Fallback on network errors or unexpected issues
+  return true;
 }
 
 export default function ChatTifa({ mood }: { mood: string }) {
@@ -19,19 +34,23 @@ export default function ChatTifa({ mood }: { mood: string }) {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  
   const endRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(false);
   const greetingPlayedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     isMounted.current = true;
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
-  
-  // Auto scroll
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typing]);
 
   // Greeting + voice (runs only once on mount)
   useEffect(() => {
@@ -41,91 +60,101 @@ export default function ChatTifa({ mood }: { mood: string }) {
     if (voiceEnabled && !greetingPlayedRef.current) {
       greetingPlayedRef.current = true;
       fetch(`/api/voice?text=${encodeURIComponent(greetText)}`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.audio && isMounted.current) {
-            playBase64Audio(data.audio, "audio/wav").catch(err => 
+            playBase64Audio(data.audio, "audio/wav").catch((err) =>
               console.warn("🎧 Greeting voice playback error:", err)
             );
           }
         })
-        .catch(err => console.error("🎧 Greeting voice fetch error:", err));
+        .catch((err) => console.error("🎧 Greeting voice fetch error:", err));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  const updateLastTifaMessage = (text: string) => {
+    setMessages(current => {
+      const next = [...current];
+      const lastIndex = next.length - 1;
+      if (lastIndex >= 0 && next[lastIndex].sender === "tifa") {
+        next[lastIndex] = { ...next[lastIndex], text };
+      }
+      return next;
+    });
+  };
 
   async function sendMessage() {
-    if (!input.trim() || sending) return;
-    
+    const outgoingMessage = input.trim();
+    if (!outgoingMessage || sending) return;
+
     setError(null);
     setSending(true);
-    
-    const userMessage: Message = { sender: "user", text: input };
-    const newMessages: Message[] = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput("");
-    
-    // Typing indicator
     setTyping(true);
 
+    const userMessage: Message = { sender: "user", text: outgoingMessage };
+    setMessages(prev => [...prev, userMessage, { sender: 'tifa', text: '' }]);
+    setInput("");
+    
+    abortControllerRef.current = new AbortController();
+    let finalReply = "";
+
     try {
-      const res = await fetch("/api/tifa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+      let streamedText = "";
+      await streamTifaReply({
+        message: outgoingMessage,
+        mood: mood.toLowerCase(),
+        signal: abortControllerRef.current.signal,
+        onDelta: (delta) => {
+          if (typing) setTyping(false); // Stop typing dots on first delta
+          streamedText += delta;
+          updateLastTifaMessage(streamedText);
+        },
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const friendlyError = getApiErrorMessage(errorData, "Tifa is having trouble connecting right now. Please try again.");
-        if (isMounted.current) setError(friendlyError);
-        // Remove the user's message on failure to allow retry
-        setMessages(messages); 
-        return;
-      }
-
-      const data = await res.json();
-      const reply = data.reply || "Hmm... I’m thinking 🧠";
-
-      // Typing effect
-      for (let i = 0; i < reply.length; i++) {
-        if (!isMounted.current) return;
-        setMessages([
-          ...newMessages,
-          { sender: "tifa", text: reply.slice(0, i + 1) },
-        ]);
-        await new Promise((r) => setTimeout(r, 15));
-      }
-      setTyping(false);
-
-      // Auto voice
-      if (voiceEnabled && isMounted.current) {
-        fetch(`/api/voice?text=${encodeURIComponent(reply)}`)
-          .then(vRes => vRes.json())
-          .then(vData => {
-            if (vData.audio && isMounted.current) {
-              playBase64Audio(vData.audio, "audio/wav").catch(err => 
-                console.warn("🎙️ Reply voice playback error:", err)
-              );
-            }
-          })
-          .catch(err => console.warn("🎙️ Reply voice fetch error:", err));
-      }
-    } catch (err) {
-      console.error("❌ Chat error:", err);
-      if (isMounted.current) {
-        setError("Could not connect to the chat service.");
-        setMessages(messages); // Revert to messages before user send
+      finalReply = streamedText;
+    } catch (streamErr) {
+      console.error("Stream failed, considering fallback:", streamErr);
+      if (finalReply.trim()) {
+        setError("The stream was interrupted. The response may be incomplete.");
+      } else if (shouldFallback(streamErr)) {
+        try {
+          console.log("Attempting non-streaming fallback...");
+          setTyping(true); // show typing for fallback
+          finalReply = await sendTifaMessage(outgoingMessage, mood.toLowerCase());
+          updateLastTifaMessage(finalReply);
+        } catch (fallbackErr) {
+          console.error("Fallback also failed:", fallbackErr);
+          const message = fallbackErr instanceof Error ? fallbackErr.message : "An unknown error occurred.";
+          setError(message);
+          setMessages(prev => prev.slice(0, -1)); // remove empty tifa message
+        }
+      } else {
+         const message = streamErr instanceof Error ? streamErr.message : "An unknown error occurred.";
+         setError(message);
+         setMessages(prev => prev.slice(0, -1));
       }
     } finally {
       if (isMounted.current) {
         setTyping(false);
         setSending(false);
+        if (voiceEnabled && finalReply.trim()) {
+          fetch(`/api/voice?text=${encodeURIComponent(finalReply)}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.audio && isMounted.current) {
+                playBase64Audio(data.audio, "audio/wav").catch((err) =>
+                  console.warn("🎙️ Reply voice playback error:", err)
+                );
+              }
+            })
+            .catch((err) => console.warn("🎙️ Reply voice fetch error:", err));
+        }
       }
     }
   }
-  
+
   const moodLower = mood.toLowerCase();
+  // ... (rest of the component is identical)
   const avatarSrc = `/tifa_${moodLower}.png`;
   const bgMood =
     moodLower === "happy"
