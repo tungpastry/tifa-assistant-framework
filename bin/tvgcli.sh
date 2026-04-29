@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+ROOT="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
 cd "$ROOT"
 
 if ! command -v gemini >/dev/null 2>&1; then
@@ -15,8 +16,36 @@ if [[ ! -f "$ROOT/bootstrap.txt" ]]; then
   exit 1
 fi
 
-# Canonical TradeVibe DevOps entrypoint.
-# Usage:
-#   ./bin/tvgcli.sh "inspect repo and summarize current architecture"
-#   ./bin/tvgcli.sh @docs/prompts/P1_inspect.txt
-exec gemini --context @bootstrap.txt "$@"
+if [[ $# -eq 0 ]]; then
+  echo "Usage:"
+  echo '  tvgcli "your instruction"'
+  echo "  tvgcli @path/to/prompt.txt"
+  exit 1
+fi
+
+USER_PROMPT=""
+
+if [[ "$1" == @* ]]; then
+  PROMPT_FILE="${1#@}"
+  if [[ ! -f "$PROMPT_FILE" ]]; then
+    echo "ERROR: prompt file not found: $PROMPT_FILE"
+    exit 1
+  fi
+  USER_PROMPT="$(cat "$PROMPT_FILE")"
+  shift
+  if [[ $# -gt 0 ]]; then
+    USER_PROMPT="$USER_PROMPT
+
+Additional instruction:
+$*"
+  fi
+else
+  USER_PROMPT="$*"
+fi
+
+FULL_PROMPT="$(cat "$ROOT/bootstrap.txt")
+
+USER TASK:
+$USER_PROMPT"
+
+exec gemini -p "$FULL_PROMPT"
