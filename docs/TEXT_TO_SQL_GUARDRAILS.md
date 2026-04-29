@@ -36,6 +36,18 @@ The intermediate plan should include:
 
 The QueryPlan is the only input to the SQL compiler. The raw user question should never be concatenated into SQL.
 
+The initial scaffold lives under:
+
+```text
+lib/text-to-sql/types.ts
+lib/text-to-sql/planner.ts
+lib/text-to-sql/semantic-layer.ts
+lib/text-to-sql/sql-validator.ts
+lib/text-to-sql/guardrails.ts
+```
+
+The scaffold intentionally uses a conservative QueryPlan compiler and connector safety validation. It is not a production financial analyst yet; it is a guarded path for future integrations.
+
 ## Static Validation Rules
 
 The validator should reject queries that:
@@ -83,3 +95,14 @@ Answers derived from financial databases should include:
 - Query warnings.
 - A statement that results are informational and not investment advice when applicable.
 
+## Audit Requirements
+
+Every Text-to-SQL attempt should produce audit/tool-call records with:
+
+- Tenant and assistant context.
+- Original intent classification.
+- QueryPlan JSON.
+- Compiled SQL after guardrails.
+- Rejection reasons, if rejected.
+- Connector source and row count, if executed.
+- Usage event metadata for planning, validation, and query execution.
