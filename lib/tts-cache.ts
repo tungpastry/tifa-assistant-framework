@@ -42,10 +42,11 @@ export function normalizeTtsText(text: string): string {
 }
 
 export function getVoiceIdentity() {
+  const modelPath = process.env.PIPER_MODEL || "/home/nexus/piper/voices/en_US-libritts-high.onnx";
   return {
     voice: "tifa-default",
-    modelPath: process.env.PIPER_MODEL || "/home/nexus/piper/voices/en_US-libritts-high.onnx",
-    modelName: "en_US-libritts-high.onnx",
+    modelPath,
+    modelName: path.basename(modelPath),
     piperBin: process.env.PIPER_BIN || "/home/nexus/piper-env/bin/piper",
   };
 }

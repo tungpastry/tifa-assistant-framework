@@ -12,6 +12,8 @@ import {
   readAudioCacheMeta,
   generateVoiceToCache,
   getVoiceIdentity,
+  writeVoiceJob,
+  VoiceJobRecord,
 } from "@/lib/tts-cache";
 
 const RATE_LIMIT_WINDOW_MS = parsePositiveInt(
@@ -71,13 +73,32 @@ export async function POST(req: Request) {
       // Cache hit
       // In a real system, we'd update the hit_count here asynchronously
       const jobId = `tts_${randomUUID()}`;
+      const now = new Date().toISOString();
+      const voice = body.voice || identity.voice;
+      const model = identity.modelName;
+      const audioUrl = `/api/voice/jobs/${jobId}/audio`;
+
+      const jobRecord: VoiceJobRecord = {
+        job_id: jobId,
+        status: "ready",
+        cache_key: cacheKey,
+        audio_url: audioUrl,
+        error: null,
+        voice,
+        model,
+        created_at: now,
+        updated_at: now,
+      };
+
+      await writeVoiceJob(jobRecord);
+
       return NextResponse.json({
         status: "ready",
         cache_hit: true,
         job_id: jobId,
-        audio_url: `/api/voice/jobs/${jobId}/audio`,
-        voice: body.voice || identity.voice,
-        model: identity.modelName,
+        audio_url: audioUrl,
+        voice,
+        model,
       });
     }
 
