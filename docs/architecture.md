@@ -271,8 +271,11 @@ runtime/
 ├─ audio_cache/
 │  ├─ <cache_key>.wav
 │  └─ <cache_key>.json
-└─ tts_jobs/
-   └─ <job_id>.json
+├─ tts_jobs/
+│  └─ <job_id>.json
+└─ chat_sessions/
+   ├─ session_<uuid>.json
+   └─ session_<uuid>.messages.jsonl
 ```
 
 Directory responsibilities:
@@ -284,6 +287,7 @@ Directory responsibilities:
 | `runtime/logs/` | Pipeline and runtime logs |
 | `runtime/audio_cache/` | TTS cache WAV files and metadata |
 | `runtime/tts_jobs/` | Filesystem voice job records |
+| `runtime/chat_sessions/` | Local ChatTifa session metadata and message history |
 
 Runtime directories are created by the shared runtime helper in `lib/runtime.ts`.
 
@@ -633,7 +637,7 @@ Responsibilities:
 - Create deterministic cache key.
 - Read/write audio cache metadata.
 - Read/write voice job records.
-- Generate audio to cache on cache miss.
+- Queue cache misses for the local TTS worker.
 - Return completed job metadata.
 - Mark failed jobs when generation fails.
 
@@ -649,9 +653,7 @@ Cache key algorithm:
 sha256(normalized_text|voice|model_path|format)
 ```
 
-Current limitation:
-
-> The API is job-shaped and cache-first, but cache misses are still generated synchronously in the request handler. A true background worker queue is planned for a later implementation slice.
+The local worker in `scripts/tts-worker.mjs` scans queued jobs and generates audio into `runtime/audio_cache/`.
 
 ---
 
@@ -752,6 +754,7 @@ ChatTifa responsibilities:
 - Manage chat messages.
 - Send streaming chat requests.
 - Fall back to non-streaming chat.
+- Persist local session metadata and messages without blocking the UI.
 - Play voice greeting/replies.
 - Render mood-based UI.
 
@@ -845,22 +848,22 @@ Cloudflare/platform limiter
 Database-backed quota layer
 ```
 
-### 19.3 Voice Jobs Are Not Fully Async Yet
+### 19.3 Voice Jobs Are Local Async
 
-The voice job API has a job-shaped contract, but cache misses still generate audio synchronously inside the request.
+The voice job API is cache-first and uses a local filesystem worker. It is not a distributed queue.
 
-Future replacement:
+Current flow:
 
 ```text
 POST /api/voice/jobs
 → write queued job
-→ background worker generates audio
+→ local worker generates audio
 → client polls job status
 ```
 
 ### 19.4 No User Authentication Yet
 
-There is no user account layer, so ChatTifa history is currently browser/component state rather than persisted per user.
+There is no user account layer, so ChatTifa history is persisted only as local filesystem sessions, not per authenticated user.
 
 ### 19.5 No SaaS Tenant Model Yet
 

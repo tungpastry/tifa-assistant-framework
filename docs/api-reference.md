@@ -13,6 +13,10 @@ TradeVibe currently uses **Next.js App Router Route Handlers** as its API layer.
 | `GET` | `/api/today` | Load the latest daily vibe bundle |
 | `POST` | `/api/tifa` | Non-streaming Tifa chat fallback |
 | `POST` | `/api/tifa/stream` | Preferred SSE streaming Tifa chat |
+| `POST` | `/api/chat/sessions` | Create a local chat session |
+| `GET` | `/api/chat/sessions/{sessionId}` | Read local chat session metadata |
+| `GET` | `/api/chat/sessions/{sessionId}/messages` | Read local chat session messages |
+| `POST` | `/api/chat/sessions/{sessionId}/messages` | Append a local chat session message |
 | `GET` | `/api/voice?text=...` | Legacy Piper voice endpoint returning base64 WAV |
 | `POST` | `/api/voice/jobs` | Create a cache-first voice job |
 | `GET` | `/api/voice/jobs/{jobId}` | Read voice job status |
@@ -454,7 +458,85 @@ stream fails before usable text
 
 ---
 
-# 7. `GET /api/voice?text=...`
+# 7. Chat History APIs
+
+Local ChatTifa session persistence is filesystem-backed and single-node.
+
+Runtime files:
+
+```text
+runtime/chat_sessions/session_<uuid>.json
+runtime/chat_sessions/session_<uuid>.messages.jsonl
+```
+
+## `POST /api/chat/sessions`
+
+Creates a local chat session.
+
+Request body:
+
+```json
+{
+  "mood": "focused",
+  "title": "ChatTifa"
+}
+```
+
+Response:
+
+```json
+{
+  "id": "session_uuid",
+  "title": "ChatTifa",
+  "mood": "focused",
+  "created_at": "iso_timestamp",
+  "updated_at": "iso_timestamp"
+}
+```
+
+## `GET /api/chat/sessions/{sessionId}`
+
+Returns session metadata or `404 VALIDATION_ERROR` when the session is missing.
+
+## `GET /api/chat/sessions/{sessionId}/messages`
+
+Returns:
+
+```json
+{
+  "messages": []
+}
+```
+
+## `POST /api/chat/sessions/{sessionId}/messages`
+
+Appends a message record.
+
+Request body:
+
+```json
+{
+  "role": "user",
+  "content": "Hello Tifa",
+  "mood": "focused",
+  "voice_job_id": null,
+  "model": null
+}
+```
+
+Validation:
+
+| Rule | Result |
+|---|---|
+| Invalid session ID | `400 VALIDATION_ERROR` |
+| Missing session | `404 VALIDATION_ERROR` |
+| Invalid JSON | `400 VALIDATION_ERROR` |
+| Invalid role | `400 VALIDATION_ERROR` |
+| Empty content | `400 VALIDATION_ERROR` |
+
+---
+
+# 8. `GET /api/voice?text=...`
 
 Legacy Piper voice endpoint.
 
@@ -542,7 +624,7 @@ Shape:
 
 ---
 
-# 8. `POST /api/voice/jobs`
+# 9. `POST /api/voice/jobs`
 
 Creates a cache-first voice generation job.
 
@@ -714,7 +796,7 @@ Current note:
 
 ---
 
-# 9. `GET /api/voice/jobs/{jobId}`
+# 10. `GET /api/voice/jobs/{jobId}`
 
 Reads the status of a voice job.
 
@@ -774,7 +856,7 @@ Shape:
 
 ---
 
-# 10. `GET /api/voice/jobs/{jobId}/audio`
+# 11. `GET /api/voice/jobs/{jobId}/audio`
 
 Fetches the generated binary WAV audio for a completed voice job.
 
@@ -843,7 +925,7 @@ Binary WAV audio
 
 ---
 
-# 11. `GET /api/health`
+# 12. `GET /api/health`
 
 Healthcheck endpoint.
 
@@ -865,7 +947,7 @@ The health endpoint is expected to check local service dependencies such as:
 - Ollama availability
 - Piper availability
 
-The runtime check verifies the existence of all critical directories: `runtime/`, `runtime/daily_vibes/`, `runtime/logs/`, `runtime/audio_cache/`, and `runtime/tts_jobs/`.
+The runtime check verifies the existence of all critical directories: `runtime/`, `runtime/daily_vibes/`, `runtime/logs/`, `runtime/audio_cache/`, `runtime/tts_jobs/`, and `runtime/chat_sessions/`.
 
 ## Success / Degraded Response
 
@@ -999,6 +1081,7 @@ Current smoke coverage:
 | Health | `/api/health` returns 200 or 503 and includes `status` |
 | Tifa non-streaming | invalid JSON, empty message, too-long message |
 | Tifa streaming | invalid JSON, empty message, too-long message |
+| Chat history | invalid JSON, invalid/missing session, create session, append message, read messages |
 | Voice legacy | empty text, too-long text |
 | Voice jobs | invalid JSON, empty text, too-long text, missing job status, missing job audio |
 | Live optional | live `/api/tifa`, `/api/tifa/stream`, `/api/voice`, `/api/voice/jobs`, job status, and job audio |
@@ -1127,6 +1210,7 @@ runtime/latest.json
 runtime/daily_vibes/
 runtime/audio_cache/
 runtime/tts_jobs/
+runtime/chat_sessions/
 ```
 
 This is appropriate for local-first deployment but not enough for distributed production.
@@ -1149,9 +1233,9 @@ POST /api/voice/jobs
 
 The current limiter is in-memory. For multi-instance production, use Redis or external rate limiting.
 
-### 16.4 No Auth / Session Persistence Yet
+### 16.4 No Auth Yet
 
-There is no user authentication and no persisted per-user chat history yet.
+There is no user authentication. Chat history is persisted only as local filesystem sessions, not per authenticated user.
 
 ---
 

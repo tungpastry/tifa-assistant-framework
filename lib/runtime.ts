@@ -45,6 +45,10 @@ export function getTtsJobsDir() {
   return path.join(getRuntimeDir(), "tts_jobs");
 }
 
+export function getChatSessionsDir() {
+  return path.join(getRuntimeDir(), "chat_sessions");
+}
+
 export function getLatestManifestPath() {
   return path.join(getRuntimeDir(), "latest.json");
 }
@@ -56,6 +60,7 @@ export function ensureRuntimeDirs() {
     getRuntimeLogsDir(),
     getAudioCacheDir(),
     getTtsJobsDir(),
+    getChatSessionsDir(),
   ]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

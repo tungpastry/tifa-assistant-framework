@@ -30,6 +30,7 @@ Current supported profile:
 | Runtime state | Local filesystem under `runtime/` |
 | Audio cache | Local filesystem under `runtime/audio_cache/` |
 | Voice jobs | Local filesystem under `runtime/tts_jobs/` |
+| Chat history | Local filesystem under `runtime/chat_sessions/` |
 | Rate limit | In-memory process-local limiter |
 | Production manager | PM2 or direct `npm run start` |
 | Daily pipeline | systemd timer or manual script |
@@ -208,6 +209,7 @@ Expected layout:
 ```text
 runtime/
 runtime/audio_cache/
+runtime/chat_sessions/
 runtime/daily_vibes/
 runtime/logs/
 runtime/tts_jobs/
@@ -222,6 +224,7 @@ Runtime purposes:
 | `runtime/logs/` | Runtime and pipeline logs |
 | `runtime/audio_cache/` | Cached TTS WAV files and metadata |
 | `runtime/tts_jobs/` | Filesystem voice job records |
+| `runtime/chat_sessions/` | Local ChatTifa session metadata and message history |
 
 ---
 
@@ -499,7 +502,7 @@ The healthcheck should help verify:
 - Ollama availability
 - Piper availability
 
-The runtime check verifies the existence of all necessary directories: `runtime/`, `daily_vibes`, `logs`, `audio_cache`, and `tts_jobs`.
+The runtime check verifies the existence of all necessary directories: `runtime/`, `daily_vibes`, `logs`, `audio_cache`, `tts_jobs`, and `chat_sessions`.
 
 ---
 

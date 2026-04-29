@@ -9,11 +9,19 @@ import {
   sendTifaMessage,
   ApiRequestError,
   playTifaVoice,
+  createChatSession,
+  appendChatMessage,
+  type ChatMessageRole,
 } from "@/lib/client-api";
 
 interface Message {
+  id: string;
   sender: "tifa" | "user";
   text: string;
+}
+
+function createMessageId() {
+  return globalThis.crypto?.randomUUID?.() ?? `msg_${Date.now()}_${Math.random()}`;
 }
 
 // Helper to determine if a fallback to non-streaming is appropriate
@@ -39,6 +47,54 @@ export default function ChatTifa({ mood }: { mood: string }) {
   const isMounted = useRef(false);
   const greetingPlayedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const chatSessionIdRef = useRef<string | null>(null);
+  const chatSessionPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  const ensureChatSession = async () => {
+    if (chatSessionIdRef.current) return chatSessionIdRef.current;
+
+    if (!chatSessionPromiseRef.current) {
+      chatSessionPromiseRef.current = createChatSession({
+        mood: mood.toLowerCase(),
+        title: "ChatTifa",
+      })
+        .then((session) => {
+          chatSessionIdRef.current = session.id;
+          return session.id;
+        })
+        .catch((err) => {
+          console.warn("Chat session persistence failed:", err);
+          chatSessionPromiseRef.current = null;
+          return null;
+        });
+    }
+
+    return chatSessionPromiseRef.current;
+  };
+
+  const persistChatMessage = async (
+    role: ChatMessageRole,
+    content: string,
+    options?: { voiceJobId?: string | null; model?: string | null }
+  ) => {
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
+
+    try {
+      const sessionId = await ensureChatSession();
+      if (!sessionId) return;
+
+      await appendChatMessage(sessionId, {
+        role,
+        content: trimmedContent,
+        mood: mood.toLowerCase(),
+        voice_job_id: options?.voiceJobId ?? null,
+        model: options?.model ?? null,
+      });
+    } catch (err) {
+      console.warn("Chat message persistence failed:", err);
+    }
+  };
 
   useEffect(() => {
     isMounted.current = true;
@@ -55,7 +111,8 @@ export default function ChatTifa({ mood }: { mood: string }) {
   // Greeting + voice (runs only once on mount)
   useEffect(() => {
     const greetText = "Hey trader, how are you feeling today?";
-    setMessages([{ sender: "tifa", text: greetText }]);
+    setMessages([{ id: createMessageId(), sender: "tifa", text: greetText }]);
+    void persistChatMessage("assistant", greetText);
 
     if (voiceEnabled && !greetingPlayedRef.current) {
       greetingPlayedRef.current = true;
@@ -84,8 +141,9 @@ export default function ChatTifa({ mood }: { mood: string }) {
     setSending(true);
     setTyping(true);
 
-    const userMessage: Message = { sender: "user", text: outgoingMessage };
-    setMessages(prev => [...prev, userMessage, { sender: 'tifa', text: '' }]);
+    const userMessage: Message = { id: createMessageId(), sender: "user", text: outgoingMessage };
+    setMessages(prev => [...prev, userMessage, { id: createMessageId(), sender: 'tifa', text: '' }]);
+    void persistChatMessage("user", outgoingMessage);
     setInput("");
     
     abortControllerRef.current = new AbortController();
@@ -137,9 +195,17 @@ export default function ChatTifa({ mood }: { mood: string }) {
       if (isMounted.current) {
         setTyping(false);
         setSending(false);
+        let voiceJobId: string | null = null;
         if (voiceEnabled && shouldPlayVoice && finalReply.trim()) {
-          playTifaVoice(finalReply, { voice: "tifa-default" })
-            .catch((err) => console.warn("🎙️ Reply voice playback error:", err));
+          try {
+            const voiceResult = await playTifaVoice(finalReply, { voice: "tifa-default" });
+            voiceJobId = voiceResult.jobId ?? null;
+          } catch (err) {
+            console.warn("🎙️ Reply voice playback error:", err);
+          }
+        }
+        if (finalReply.trim()) {
+          void persistChatMessage("assistant", finalReply, { voiceJobId });
         }
       }
     }
@@ -208,9 +274,9 @@ export default function ChatTifa({ mood }: { mood: string }) {
           >
             <div className="h-80 overflow-y-auto p-3 space-y-3 text-sm">
               <AnimatePresence>
-                {messages.map((msg, i) => (
+                {messages.map((msg) => (
                   <motion.div
-                    key={i}
+                    key={msg.id}
                     className={`p-2 rounded-lg max-w-[90%] ${
                       msg.sender === "user"
                         ? "ml-auto bg-pink-600/60"

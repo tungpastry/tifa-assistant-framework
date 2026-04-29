@@ -6,6 +6,7 @@ import {
   getRuntimeLogsDir,
   getAudioCacheDir,
   getTtsJobsDir,
+  getChatSessionsDir,
 } from "@/lib/runtime";
 import { parseTimeoutMs } from "@/lib/api";
 
@@ -27,6 +28,7 @@ async function checkRuntime(): Promise<Check> {
       getRuntimeLogsDir(),
       getAudioCacheDir(),
       getTtsJobsDir(),
+      getChatSessionsDir(),
     ];
     details.dirs_checked = dirs;
     await Promise.all(dirs.map((dir) => fs.access(dir)));

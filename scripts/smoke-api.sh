@@ -94,9 +94,33 @@ assert_status "GET /api/voice/jobs/nonexistent_job" "404" "${BASE_URL}/api/voice
 assert_status "GET /api/voice/jobs/nonexistent_job/audio" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job/audio"
 echo ""
 
+# --- Chat History API Validation ---
+echo "6. Chat History API Validation"
+assert_status "POST /api/chat/sessions (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"mood":"focused"' "${BASE_URL}/api/chat/sessions"
+assert_status "GET /api/chat/sessions invalid id" "400" "${BASE_URL}/api/chat/sessions/not_a_session"
+assert_status "GET /api/chat/sessions nonexistent" "404" "${BASE_URL}/api/chat/sessions/session_00000000-0000-4000-8000-000000000000"
+
+chat_session_response=$(mktemp)
+chat_session_status=$(curl -s -o "$chat_session_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"mood":"focused","title":"Smoke"}' "${BASE_URL}/api/chat/sessions")
+if [[ "$chat_session_status" == "200" ]]; then
+  chat_session_id=$(extract_json_field "$chat_session_response" "id")
+  echo "Checking POST /api/chat/sessions... ✅ OK (200, $chat_session_id)"
+else
+  echo "Checking POST /api/chat/sessions... ❌ FAIL (Expected 200, got $chat_session_status)"
+  rm -f "$chat_session_response"
+  exit 1
+fi
+rm -f "$chat_session_response"
+
+assert_status "GET /api/chat/sessions/{sessionId}" "200" "${BASE_URL}/api/chat/sessions/${chat_session_id}"
+assert_status "POST /api/chat/sessions/{sessionId}/messages (Empty Content)" "400" -X POST -H "Content-Type: application/json" -d '{"role":"user","content":""}' "${BASE_URL}/api/chat/sessions/${chat_session_id}/messages"
+assert_status "POST /api/chat/sessions/{sessionId}/messages" "200" -X POST -H "Content-Type: application/json" -d '{"role":"user","content":"hello"}' "${BASE_URL}/api/chat/sessions/${chat_session_id}/messages"
+assert_status "GET /api/chat/sessions/{sessionId}/messages" "200" "${BASE_URL}/api/chat/sessions/${chat_session_id}/messages"
+echo ""
+
 
 if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
-  echo "6. Live API Checks (RUN_LIVE_SMOKE=1)"
+  echo "7. Live API Checks (RUN_LIVE_SMOKE=1)"
   assert_status "POST /api/tifa (Live)" "200" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa"}' "${BASE_URL}/api/tifa"
   assert_status "GET /api/voice (Live)" "200" "${BASE_URL}/api/voice?text=Hello"
 
@@ -194,12 +218,12 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   rm -f "$audio_file"
   echo ""
 else
-    echo "6. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+    echo "7. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
 fi
 
 if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   echo ""
-  echo "7. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "8. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
   echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
 
   # Test Tifa rate limit
@@ -229,7 +253,7 @@ if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   fi
 else
     echo ""
-    echo "7. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
+    echo "8. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 

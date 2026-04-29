@@ -205,8 +205,11 @@ runtime/
 ├─ audio_cache/
 │  ├─ <cache_key>.wav
 │  └─ <cache_key>.json
-└─ tts_jobs/
-   └─ <job_id>.json
+├─ tts_jobs/
+│  └─ <job_id>.json
+└─ chat_sessions/
+   ├─ session_<uuid>.json
+   └─ session_<uuid>.messages.jsonl
 ```
 
 ### Runtime Purpose
@@ -218,6 +221,7 @@ runtime/
 | `runtime/logs/` | Pipeline/runtime logs |
 | `runtime/audio_cache/` | Cached TTS WAV files and metadata |
 | `runtime/tts_jobs/` | Filesystem voice job records |
+| `runtime/chat_sessions/` | Local ChatTifa session metadata and message history |
 
 ---
 
@@ -235,6 +239,10 @@ runtime/
 |---|---|---|
 | `POST` | `/api/tifa` | Non-streaming Tifa chat fallback |
 | `POST` | `/api/tifa/stream` | Preferred SSE streaming Tifa chat endpoint |
+| `POST` | `/api/chat/sessions` | Create local ChatTifa session |
+| `GET` | `/api/chat/sessions/{sessionId}` | Read local ChatTifa session metadata |
+| `GET` | `/api/chat/sessions/{sessionId}/messages` | Read local ChatTifa messages |
+| `POST` | `/api/chat/sessions/{sessionId}/messages` | Append local ChatTifa message |
 
 ### Voice / TTS
 
@@ -402,10 +410,10 @@ Important limitations:
 - Runtime artifacts are stored on the local filesystem.
 - TTS audio cache is stored on the local filesystem.
 - Voice job records are stored on the local filesystem.
+- Chat history is stored on the local filesystem.
 - Rate limiting is in-memory and process-local.
-- Voice jobs are cache-first and job-shaped, but cache misses are still generated synchronously inside the request.
+- Voice jobs are cache-first and processed by a local filesystem worker.
 - There is no user authentication yet.
-- There is no personalized chat history yet.
 - There is no multi-tenant SaaS control plane yet.
 - There is no Redis-backed distributed state yet.
 - Piper is the current TTS engine; Vietnamese TTS can be added later.
@@ -430,11 +438,11 @@ For multi-instance production, replace local in-memory/filesystem state with Red
 - [x] Add cache-first voice job API
 - [x] Add filesystem TTS audio cache
 - [x] Add filesystem voice job records
-- [ ] Move voice jobs from synchronous cache-miss generation to a real async worker queue
-- [ ] Add cleanup/retention policy for `runtime/audio_cache` and `runtime/tts_jobs`
+- [x] Move voice jobs from synchronous cache-miss generation to a local async worker
+- [x] Add cleanup/retention policy for runtime cache, jobs, and logs
+- [x] Add local filesystem ChatTifa history
 - [ ] Add Redis-backed rate limiting for production multi-instance deployment
 - [ ] Add user authentication
-- [ ] Add personalized chat history
 - [ ] Add Vietnamese TTS voice profile
 - [ ] Expand music providers
 - [ ] Prepare reusable Tifa Assistant Framework packages

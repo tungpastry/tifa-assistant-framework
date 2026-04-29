@@ -121,6 +121,78 @@ export type TifaStreamEvent =
   | { type: "done"; model?: string }
   | { type: "error"; code?: string; message: string };
 
+export interface ChatSessionRecord {
+  id: string;
+  title?: string;
+  mood?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChatMessageRole = "user" | "assistant" | "system";
+
+export interface ChatMessageRecord {
+  id: string;
+  session_id: string;
+  role: ChatMessageRole;
+  content: string;
+  mood?: string;
+  voice_job_id?: string | null;
+  model?: string | null;
+  created_at: string;
+}
+
+export async function createChatSession(input?: {
+  title?: string;
+  mood?: string;
+}): Promise<ChatSessionRecord> {
+  const res = await fetch("/api/chat/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input || {}),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Failed to create chat session."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  return (await res.json()) as ChatSessionRecord;
+}
+
+export async function appendChatMessage(
+  sessionId: string,
+  input: {
+    role: ChatMessageRole;
+    content: string;
+    mood?: string;
+    voice_job_id?: string | null;
+    model?: string | null;
+  }
+): Promise<ChatMessageRecord> {
+  const res = await fetch(
+    `/api/chat/sessions/${encodeURIComponent(sessionId)}/messages`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }
+  );
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Failed to append chat message."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  return (await res.json()) as ChatMessageRecord;
+}
+
 /**
  * Streams a reply from the Tifa SSE endpoint.
  */
