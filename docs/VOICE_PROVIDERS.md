@@ -36,6 +36,16 @@ Providers should expose:
 - `supportsVoiceCloning`
 - `licenseClass`
 
+The initial provider scaffold lives under:
+
+```text
+lib/voice/types.ts
+lib/voice/provider-registry.ts
+lib/voice/providers/piper.ts
+lib/voice/providers/vipiper.ts
+lib/voice/providers/vieneu.ts
+```
+
 ## Piper Provider
 
 Piper remains the default local-first provider. Existing environment variables must keep working:
@@ -76,6 +86,8 @@ Production-safe default recommendation:
 - Use the 0.5B Apache-2.0 model or 0.5B q4/q8 GGUF Apache-2.0 variants for SaaS/commercial mode.
 - Do not default to 0.3B CC BY-NC models for commercial or SaaS mode.
 
+See `docs/VIENEU_TTS_INTEGRATION.md` for the facade deployment guidance.
+
 ## SaaS Audio Storage
 
 In SaaS mode, generated voice assets should move to object storage with:
@@ -85,4 +97,3 @@ In SaaS mode, generated voice assets should move to object storage with:
 - Lifecycle retention policies.
 - Usage events for generated seconds/characters.
 - Audit events for provider failures and policy rejections.
-

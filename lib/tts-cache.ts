@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { spawn } from "child_process";
 import { getAudioCacheDir, getTtsJobsDir, ensureRuntimeDirs } from "./runtime";
 import { parseTimeoutMs } from "./api";
+import { getPiperVoiceRuntimeConfig } from "./voice/providers/piper";
 
 export const MAX_TTS_TEXT_LENGTH = 500;
 
@@ -43,12 +44,12 @@ export function normalizeTtsText(text: string): string {
 }
 
 export function getVoiceIdentity() {
-  const modelPath = process.env.PIPER_MODEL || "/home/nexus/piper/voices/en_US-libritts-high.onnx";
+  const config = getPiperVoiceRuntimeConfig();
   return {
-    voice: "tifa-default",
-    modelPath,
-    modelName: path.basename(modelPath),
-    piperBin: process.env.PIPER_BIN || "/home/nexus/piper-env/bin/piper",
+    voice: config.voiceId,
+    modelPath: config.modelPath,
+    modelName: path.basename(config.modelPath),
+    piperBin: config.piperBin,
   };
 }
 
