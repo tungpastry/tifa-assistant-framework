@@ -124,6 +124,69 @@ Generates audio from text using the local Piper TTS engine.
 - **Error Responses:** Uses the standardized error envelope.
   - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `TTS_TIMEOUT` (504), `TTS_GENERATION_FAILED` (500), `RATE_LIMITED` (429). The `RATE_LIMITED` error may include `details: { "retry_after_seconds": ... }`.
 
+## `POST /api/voice/jobs`
+
+Creates a new voice generation job. This is a cache-first API; however, the current implementation generates the audio immediately and synchronously on a cache miss.
+
+- **Note:** The legacy `/api/voice?text=...` endpoint remains available for backward compatibility. The frontend has not yet been switched to use voice jobs.
+- **Request Body:**
+  ```json
+  {
+    "text": "string (The text to synthesize, max 500 chars)",
+    "voice": "string (Optional, defaults to tifa-default)",
+    "format": "string (Optional, defaults to wav)"
+  }
+  ```
+- **Success Response (200 OK):**
+  - **Description:** Returns the job status and details, including whether it was a cache hit.
+  - **Shape:**
+    ```json
+    {
+      "status": "ready" | "processing" | "queued" | "failed",
+      "cache_hit": boolean,
+      "job_id": "string (e.g., tts_12345)",
+      "audio_url": "string (URL to fetch the binary audio)",
+      "voice": "string",
+      "model": "string"
+    }
+    ```
+- **Error Responses:** Uses the standardized error envelope.
+  - **Codes:** `VALIDATION_ERROR` (400), `PAYLOAD_TOO_LARGE` (413), `RATE_LIMITED` (429), `TTS_GENERATION_FAILED` (500), `TTS_TIMEOUT` (504).
+
+## `GET /api/voice/jobs/{jobId}`
+
+Retrieves the status of a specific voice job.
+
+- **Success Response (200 OK):**
+  - **Shape:**
+    ```json
+    {
+      "job_id": "string",
+      "status": "ready" | "processing" | "queued" | "failed",
+      "cache_key": "string",
+      "audio_url": "string | null",
+      "error": "string | null",
+      "voice": "string",
+      "model": "string",
+      "created_at": "ISO 8601 string",
+      "updated_at": "ISO 8601 string"
+    }
+    ```
+- **Error Responses:** Uses the standardized error envelope.
+  - **Codes:** `VALIDATION_ERROR` (404, if job not found).
+
+## `GET /api/voice/jobs/{jobId}/audio`
+
+Retrieves the generated binary WAV audio for a completed job.
+
+- **Success Response (200 OK):**
+  - **Description:** Returns the binary WAV file data.
+  - **Headers:**
+    - `Content-Type: audio/wav`
+    - `Cache-Control: public, max-age=86400`
+- **Error Responses:** Uses the standardized error envelope.
+  - **Codes:** `VALIDATION_ERROR` (400, if ID missing; 404, if job not found; 409, if job not ready), `INTERNAL_ERROR` (404, if audio file is missing).
+
 ## `GET /api/health`
 
 Performs a health check on the service and its dependencies (runtime directories, Ollama, Piper).

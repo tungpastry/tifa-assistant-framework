@@ -37,12 +37,26 @@ export function getRuntimeLogsDir() {
   return path.join(getRuntimeDir(), "logs");
 }
 
+export function getAudioCacheDir() {
+  return path.join(getRuntimeDir(), "audio_cache");
+}
+
+export function getTtsJobsDir() {
+  return path.join(getRuntimeDir(), "tts_jobs");
+}
+
 export function getLatestManifestPath() {
   return path.join(getRuntimeDir(), "latest.json");
 }
 
 export function ensureRuntimeDirs() {
-  for (const dir of [getRuntimeDir(), getDailyVibesDir(), getRuntimeLogsDir()]) {
+  for (const dir of [
+    getRuntimeDir(),
+    getDailyVibesDir(),
+    getRuntimeLogsDir(),
+    getAudioCacheDir(),
+    getTtsJobsDir(),
+  ]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
