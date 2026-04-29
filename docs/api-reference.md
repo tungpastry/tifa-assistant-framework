@@ -212,6 +212,7 @@ This endpoint is the fallback path for ChatTifa when the preferred SSE streaming
 
 ```text
 app/api/tifa/route.ts
+lib/tifa-runtime.ts
 ```
 
 ## Request Body
@@ -252,10 +253,10 @@ TIFA_PROMPT_PATH=prompts/TIFA_RUNTIME.md
 
 ```text
 POST /api/tifa
-→ validate request
-→ check rate limit
+→ parse and validate request with shared Tifa runtime helpers
+→ check rate limit with shared Tifa runtime helpers
 → read TIFA_PROMPT_PATH
-→ append user message
+→ build prompt
 → call TIFA_API_URL with stream=false
 → return full reply
 ```
@@ -325,6 +326,7 @@ This is now the preferred frontend path for ChatTifa. `ChatTifa.tsx` calls `stre
 
 ```text
 app/api/tifa/stream/route.ts
+lib/tifa-runtime.ts
 ```
 
 ## Request Body
@@ -360,10 +362,10 @@ Before the SSE stream is opened, the route can return normal JSON errors.
 
 ```text
 POST /api/tifa/stream
-→ validate request before streaming
-→ check rate limit
+→ parse and validate request before streaming
+→ check rate limit with shared Tifa runtime helpers
 → read TIFA_PROMPT_PATH
-→ append user message
+→ build prompt
 → call TIFA_API_URL with stream=true
 → parse Ollama JSON lines
 → emit SSE events to browser

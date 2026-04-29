@@ -368,6 +368,12 @@ Both paths use the same conceptual ingredients:
 - Timeout from `TIFA_TIMEOUT_MS`.
 - Local IP-based rate limit.
 
+Shared request parsing, prompt loading, prompt construction, runtime config, timeout setup, and rate limiting live in:
+
+```text
+lib/tifa-runtime.ts
+```
+
 ---
 
 ## 7. Tifa Non-Streaming Flow
@@ -397,8 +403,8 @@ Responsibilities:
 3. Reject empty messages.
 4. Reject messages longer than `MAX_MESSAGE_LENGTH`.
 5. Check local rate limit.
-6. Read prompt from `TIFA_PROMPT_PATH`.
-7. Build final prompt.
+6. Read prompt through `lib/tifa-runtime.ts`.
+7. Build final prompt through `lib/tifa-runtime.ts`.
 8. Call `TIFA_API_URL` with `stream: false`.
 9. Return `{ reply, model }`.
 10. Return standardized error envelope on validation, timeout, upstream, or internal failure.
@@ -450,7 +456,7 @@ Responsibilities:
 2. Validate `message`.
 3. Reject empty or oversized messages.
 4. Check local rate limit.
-5. Read prompt from `TIFA_PROMPT_PATH`.
+5. Read prompt through `lib/tifa-runtime.ts`.
 6. Call local Ollama with `stream: true`.
 7. Transform Ollama JSON lines into SSE events.
 8. Emit `start`, `delta`, `done`, and `error` events.
