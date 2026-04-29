@@ -496,6 +496,8 @@ The healthcheck should help verify:
 - Ollama availability
 - Piper availability
 
+The runtime check verifies the existence of all necessary directories: `runtime/`, `daily_vibes`, `logs`, `audio_cache`, and `tts_jobs`.
+
 ---
 
 ## 14. API Smoke Tests

@@ -851,6 +851,8 @@ The health endpoint is expected to check local service dependencies such as:
 - Ollama availability
 - Piper availability
 
+The runtime check verifies the existence of all critical directories: `runtime/`, `runtime/daily_vibes/`, `runtime/logs/`, `runtime/audio_cache/`, and `runtime/tts_jobs/`.
+
 ## Success / Degraded Response
 
 Status:

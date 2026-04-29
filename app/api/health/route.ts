@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
-import { getRuntimeDir, getDailyVibesDir, getRuntimeLogsDir } from "@/lib/runtime";
+import {
+  getRuntimeDir,
+  getDailyVibesDir,
+  getRuntimeLogsDir,
+  getAudioCacheDir,
+  getTtsJobsDir,
+} from "@/lib/runtime";
 import { parseTimeoutMs } from "@/lib/api";
 
 type Status = "ok" | "degraded" | "down";
@@ -15,9 +21,15 @@ async function checkRuntime(): Promise<Check> {
   let status: Status = "ok";
 
   try {
-    const dirs = [getRuntimeDir(), getDailyVibesDir(), getRuntimeLogsDir()];
+    const dirs = [
+      getRuntimeDir(),
+      getDailyVibesDir(),
+      getRuntimeLogsDir(),
+      getAudioCacheDir(),
+      getTtsJobsDir(),
+    ];
     details.dirs_checked = dirs;
-    await Promise.all(dirs.map(dir => fs.access(dir)));
+    await Promise.all(dirs.map((dir) => fs.access(dir)));
   } catch (error) {
     status = "down";
     details.error = error instanceof Error ? error.message : String(error);
