@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_URL="${TRADEVIBE_BASE_URL:-http://127.0.0.1:3100}"
+BASE_URL="${BASE_URL:-${TRADEVIBE_BASE_URL:-http://127.0.0.1:3100}}"
 MAX_VOICE_CHARS=501
 MAX_TIFA_CHARS=2001
 LONG_TEXT=$(head -c ${MAX_VOICE_CHARS} < /dev/zero | tr '\0' 'a')
