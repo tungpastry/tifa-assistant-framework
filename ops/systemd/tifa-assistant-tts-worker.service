@@ -1,0 +1,20 @@
+[Unit]
+Description=Tifa Assistant Framework Local TTS Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${TIFA_SERVICE_USER}
+WorkingDirectory=${TIFA_REPO_ROOT}
+Environment=NODE_ENV=production
+Environment=TRADEVIBE_RUNTIME_DIR=${TIFA_REPO_ROOT}/runtime
+Environment=TRADEVIBE_TTS_WORKER_INTERVAL_MS=1000
+EnvironmentFile=-${TIFA_REPO_ROOT}/.env
+ExecStart=/usr/bin/npm run tts:worker
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
