@@ -1,3 +1,6 @@
+export * from "./gateway";
+export * from "./types";
+export * from "./providers/ollama";
 export * from "@/lib/llm/mock-provider";
 export * from "@/lib/llm/provider";
 export * from "@/lib/llm/router";
@@ -6,4 +9,3 @@ export * from "@/lib/llm/providers/gemini";
 export * from "@/lib/llm/providers/ollama";
 export * from "@/lib/llm/providers/openai";
 export * from "@/lib/llm/providers/qwen";
-
