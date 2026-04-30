@@ -7,7 +7,8 @@ Provider gateway boundary for LLM providers and routing policy:
 - Ollama-compatible provider
 - placeholder provider scaffolds for OpenAI, Gemini, and Qwen
 
-The current Tifa routes still use the existing `TIFA_API_URL` path directly. This module is safe to adopt gradually.
+The current Tifa chat routes use this gateway while preserving the existing
+`TIFA_API_URL` environment contract for local Ollama-compatible runtimes.
 
 ## Local Gateway
 

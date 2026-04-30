@@ -21,5 +21,5 @@ export interface ProviderGatewayConfig {
   fallbackOrder: string[];
   defaultProvider: string;
   defaultModel?: string;
+  timeoutMs?: number;
 }
-
