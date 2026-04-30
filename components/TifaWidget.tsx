@@ -1,218 +1,39 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, MessageCircle, Volume2, VolumeX } from "lucide-react";
-import {
-  streamTifaReply,
-  sendTifaMessage,
-  ApiRequestError,
-  playTifaVoice,
-  createChatSession,
-  appendChatMessage,
-  type ChatMessageRole,
-} from "@/lib/client-api";
-
-interface Message {
-  id: string;
-  sender: "tifa" | "user";
-  text: string;
-}
-
-function createMessageId() {
-  return globalThis.crypto?.randomUUID?.() ?? `msg_${Date.now()}_${Math.random()}`;
-}
-
-// Helper to determine if a fallback to non-streaming is appropriate
-function shouldFallback(err: unknown): boolean {
-  if (err instanceof ApiRequestError) {
-    // Don't fallback on user errors like validation or rate limits
-    return err.status ? err.status >= 500 : true;
-  }
-  // Fallback on network errors or unexpected issues
-  return true;
-}
+import { useTifaChat, useTifaVoice } from "@/lib/tifa-widget";
 
 export default function TifaWidget({ mood }: { mood: string }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [typing, setTyping] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  
   const endRef = useRef<HTMLDivElement>(null);
-  const isMounted = useRef(false);
-  const greetingPlayedRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const chatSessionIdRef = useRef<string | null>(null);
-  const chatSessionPromiseRef = useRef<Promise<string | null> | null>(null);
-
-  const ensureChatSession = async () => {
-    if (chatSessionIdRef.current) return chatSessionIdRef.current;
-
-    if (!chatSessionPromiseRef.current) {
-      chatSessionPromiseRef.current = createChatSession({
-        mood: mood.toLowerCase(),
-        title: "TifaWidget",
-      })
-        .then((session) => {
-          chatSessionIdRef.current = session.id;
-          return session.id;
-        })
-        .catch((err) => {
-          console.warn("Chat session persistence failed:", err);
-          chatSessionPromiseRef.current = null;
-          return null;
-        });
-    }
-
-    return chatSessionPromiseRef.current;
-  };
-
-  const persistChatMessage = async (
-    role: ChatMessageRole,
-    content: string,
-    options?: { voiceJobId?: string | null; model?: string | null }
-  ) => {
-    const trimmedContent = content.trim();
-    if (!trimmedContent) return;
-
-    try {
-      const sessionId = await ensureChatSession();
-      if (!sessionId) return;
-
-      await appendChatMessage(sessionId, {
-        role,
-        content: trimmedContent,
-        mood: mood.toLowerCase(),
-        voice_job_id: options?.voiceJobId ?? null,
-        model: options?.model ?? null,
-      });
-    } catch (err) {
-      console.warn("Chat message persistence failed:", err);
-    }
-  };
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-      abortControllerRef.current?.abort();
-    };
-  }, []);
+  const {
+    voiceEnabled,
+    setVoiceEnabled,
+    playGreetingVoice,
+    playReplyVoice,
+  } = useTifaVoice(true);
+  const {
+    messages,
+    input,
+    setInput,
+    typing,
+    error,
+    sending,
+    sendMessage,
+  } = useTifaChat({
+    mood,
+    onGreeting: playGreetingVoice,
+    onAssistantReply: playReplyVoice,
+  });
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  // Greeting + voice (runs only once on mount)
-  useEffect(() => {
-    const greetText = "Hey trader, how are you feeling today?";
-    setMessages([{ id: createMessageId(), sender: "tifa", text: greetText }]);
-    void persistChatMessage("assistant", greetText);
-
-    if (voiceEnabled && !greetingPlayedRef.current) {
-      greetingPlayedRef.current = true;
-      playTifaVoice(greetText, { voice: "tifa-default" })
-        .catch((err) => console.warn("🎧 Greeting voice playback error:", err));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  const updateLastTifaMessage = (text: string) => {
-    setMessages(current => {
-      const next = [...current];
-      const lastIndex = next.length - 1;
-      if (lastIndex >= 0 && next[lastIndex].sender === "tifa") {
-        next[lastIndex] = { ...next[lastIndex], text };
-      }
-      return next;
-    });
-  };
-
-  async function sendMessage() {
-    const outgoingMessage = input.trim();
-    if (!outgoingMessage || sending) return;
-
-    setError(null);
-    setSending(true);
-    setTyping(true);
-
-    const userMessage: Message = { id: createMessageId(), sender: "user", text: outgoingMessage };
-    setMessages(prev => [...prev, userMessage, { id: createMessageId(), sender: 'tifa', text: '' }]);
-    void persistChatMessage("user", outgoingMessage);
-    setInput("");
-    
-    abortControllerRef.current = new AbortController();
-    let finalReply = "";
-    let streamedText = "";
-    let shouldPlayVoice = false;
-
-    try {
-      const result = await streamTifaReply({
-        message: outgoingMessage,
-        mood: mood.toLowerCase(),
-        signal: abortControllerRef.current.signal,
-        onDelta: (delta) => {
-          setTyping(false);
-          streamedText += delta;
-          updateLastTifaMessage(streamedText);
-        },
-      });
-      finalReply = result.text;
-      if (result.completed && finalReply.trim()) {
-        shouldPlayVoice = true;
-      }
-    } catch (streamErr) {
-      console.error("Stream failed, considering fallback:", streamErr);
-      if (streamedText.trim()) {
-        finalReply = streamedText;
-        setError("The stream was interrupted. The response may be incomplete.");
-      } else if (shouldFallback(streamErr)) {
-        try {
-          console.log("Attempting non-streaming fallback...");
-          setTyping(true);
-          finalReply = await sendTifaMessage(outgoingMessage, mood.toLowerCase());
-          updateLastTifaMessage(finalReply);
-          if (finalReply.trim()) {
-            shouldPlayVoice = true;
-          }
-        } catch (fallbackErr) {
-          console.error("Fallback also failed:", fallbackErr);
-          const message = fallbackErr instanceof Error ? fallbackErr.message : "An unknown error occurred.";
-          setError(message);
-          setMessages(prev => prev.slice(0, -1)); // remove empty tifa message
-        }
-      } else {
-         const message = streamErr instanceof Error ? streamErr.message : "An unknown error occurred.";
-         setError(message);
-         setMessages(prev => prev.slice(0, -1));
-      }
-    } finally {
-      if (isMounted.current) {
-        setTyping(false);
-        setSending(false);
-        let voiceJobId: string | null = null;
-        if (voiceEnabled && shouldPlayVoice && finalReply.trim()) {
-          try {
-            const voiceResult = await playTifaVoice(finalReply, { voice: "tifa-default" });
-            voiceJobId = voiceResult.jobId ?? null;
-          } catch (err) {
-            console.warn("🎙️ Reply voice playback error:", err);
-          }
-        }
-        if (finalReply.trim()) {
-          void persistChatMessage("assistant", finalReply, { voiceJobId });
-        }
-      }
-    }
-  }
-
   const moodLower = mood.toLowerCase();
-  // ... (rest of the component is identical)
   const avatarSrc = `/tifa_${moodLower}.png`;
   const bgMood =
     moodLower === "happy"
@@ -293,9 +114,9 @@ export default function TifaWidget({ mood }: { mood: string }) {
 
               {typing && (
                 <motion.div className="flex gap-1 text-gray-400">
-                  <span className="animate-pulse" style={{ animationDelay: '0s' }}>•</span>
-                  <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>•</span>
-                  <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>•</span>
+                  <span className="animate-pulse" style={{ animationDelay: "0s" }}>•</span>
+                  <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>•</span>
+                  <span className="animate-pulse" style={{ animationDelay: "0.4s" }}>•</span>
                 </motion.div>
               )}
               {error && (
