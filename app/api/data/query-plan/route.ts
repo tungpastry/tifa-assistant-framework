@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { getFrameworkRuntimeConfig } from "@/lib/framework/config";
-import { planAndValidateTextToSql } from "@/lib/text-to-sql/guardrails";
+import { createQueryPlan } from "@/lib/text-to-sql/planner";
+import { validateQueryPlanSql } from "@/lib/text-to-sql/sql-validator";
 import type { TextToSqlRequest } from "@/lib/text-to-sql/types";
 
 export const runtime = "nodejs";
@@ -84,10 +85,15 @@ export async function POST(req: Request) {
       saasMode: frameworkConfig.mode === "saas",
     },
   };
-  const validation = planAndValidateTextToSql(textToSqlRequest);
+  const plan = createQueryPlan(textToSqlRequest);
+  const validation = validateQueryPlanSql(plan, {
+    maxRows: parsed.body.maxRows,
+    tenantId: textToSqlRequest.context.tenantId,
+    requireTenantContext: textToSqlRequest.context.saasMode,
+  });
 
   return NextResponse.json({
-    plan: validation.plan,
+    plan,
     validation,
     enabled: frameworkConfig.textToSqlEnabled,
     experimental: true,

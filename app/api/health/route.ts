@@ -216,14 +216,22 @@ async function checkTextToSql(): Promise<Check> {
   if (process.env.TIFA_TEXT_TO_SQL_ENABLED !== "1") {
     return {
       status: "disabled",
-      details: { reason: "TIFA_TEXT_TO_SQL_ENABLED is not 1." },
+      details: {
+        reason: "TIFA_TEXT_TO_SQL_ENABLED is not 1.",
+        execution: "disabled",
+      },
       required: false,
     };
   }
 
   return {
-    status: "ok",
-    details: { scaffold: true, execution: "guarded" },
+    status: process.env.TIFA_PG_ENABLED === "1" ? "ok" : "degraded",
+    details: {
+      scaffold: false,
+      execution: "guarded",
+      postgres_enabled: process.env.TIFA_PG_ENABLED === "1",
+      allowed_views: process.env.TIFA_PG_ALLOWED_VIEWS?.split(",").map((view) => view.trim()).filter(Boolean) ?? [],
+    },
     required: false,
   };
 }

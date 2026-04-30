@@ -12,8 +12,8 @@ Plans and validates a question without executing SQL.
 
 ```json
 {
-  "question": "Show AAPL price and volume",
-  "allowedViews": ["v_market_bars"],
+  "question": "Show EUR/USD price snapshot",
+  "allowedViews": ["v_fx_market_snapshots"],
   "maxRows": 100
 }
 ```
@@ -36,8 +36,8 @@ flags are enabled and the request opts in with `execute: true`.
 
 ```json
 {
-  "question": "Show AAPL price and volume",
-  "allowedViews": ["v_market_bars"],
+  "question": "Show EUR/USD price snapshot",
+  "allowedViews": ["v_fx_market_snapshots"],
   "maxRows": 100,
   "execute": true
 }
@@ -64,11 +64,28 @@ Execution requires both:
 ```env
 TIFA_TEXT_TO_SQL_ENABLED=1
 TIFA_PG_ENABLED=1
+TIFA_PG_CONNECTION_STRING=postgres://...
+TIFA_PG_ALLOWED_VIEWS=v_fx_market_snapshots,v_fx_latest_news,v_fx_symbol_daily_stats,v_fx_macro_calendar,v_fx_sentiment_rollup
 ```
 
-The current PostgreSQL connector remains scaffolded and must be wired with a
-safe client before production use. Queries are executed only through the data
-connector after static validation.
+The PostgreSQL connector is wired through the optional `pg` driver. It is still
+opt-in and only executes SQL compiled from a deterministic `QueryPlan`, then
+accepted by static guardrails.
+
+## Fx-Sentinel Semantic Views
+
+Apply `sql/fx_sentinel_text_to_sql_views.sql` to the Fx-Sentinel PostgreSQL
+database before enabling execution. It exposes read-only views for:
+
+- `v_fx_market_snapshots`
+- `v_fx_latest_news`
+- `v_fx_symbol_daily_stats`
+- `v_fx_macro_calendar`
+- `v_fx_sentiment_rollup`
+
+The deterministic planner maps price/OHLC questions to market snapshots, news
+questions to latest report drivers, sentiment questions to report sentiment, and
+macro/calendar questions to upcoming report events.
 
 ## Safety Model
 
@@ -83,6 +100,6 @@ connector after static validation.
 
 ## Future Fx-Sentinel Usage
 
-Fx-Sentinel can provide a real PostgreSQL financial schema and semantic layer
-for market bars, news, macro events, sentiment, and symbol statistics while
-keeping this framework endpoint contract unchanged.
+Fx-Sentinel can point Tifa at its PostgreSQL database with the `v_fx_*` view
+allowlist. Do not grant access to raw tables unless a future migration explicitly
+adds reviewed semantic views and tests.

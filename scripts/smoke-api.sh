@@ -110,6 +110,45 @@ else
 fi
 rm -f "$data_plan_response"
 
+echo -n "Checking POST /api/data/query-plan (Fx-Sentinel price plan)..."
+fx_price_plan_response=$(mktemp)
+fx_price_plan_status=$(curl -s -o "$fx_price_plan_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show EUR/USD price snapshot","maxRows":25}' "${BASE_URL}/api/data/query-plan")
+if [[ "$fx_price_plan_status" == "200" ]] && grep -q '"v_fx_market_snapshots"' "$fx_price_plan_response"; then
+  echo " ✅ OK (200)"
+else
+  echo " ❌ FAIL (Expected fx market snapshot plan, got $fx_price_plan_status)"
+  cat "$fx_price_plan_response"
+  rm -f "$fx_price_plan_response"
+  exit 1
+fi
+rm -f "$fx_price_plan_response"
+
+echo -n "Checking POST /api/data/query-plan (Fx-Sentinel news plan)..."
+fx_news_plan_response=$(mktemp)
+fx_news_plan_status=$(curl -s -o "$fx_news_plan_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show latest EUR/USD news headlines","maxRows":25}' "${BASE_URL}/api/data/query-plan")
+if [[ "$fx_news_plan_status" == "200" ]] && grep -q '"v_fx_latest_news"' "$fx_news_plan_response"; then
+  echo " ✅ OK (200)"
+else
+  echo " ❌ FAIL (Expected fx latest news plan, got $fx_news_plan_status)"
+  cat "$fx_news_plan_response"
+  rm -f "$fx_news_plan_response"
+  exit 1
+fi
+rm -f "$fx_news_plan_response"
+
+echo -n "Checking POST /api/data/query-plan (Disallowed relation)..."
+data_rejected_plan_response=$(mktemp)
+data_rejected_plan_status=$(curl -s -o "$data_rejected_plan_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show EUR/USD price","allowedViews":["fx_reports"],"maxRows":25}' "${BASE_URL}/api/data/query-plan")
+if [[ "$data_rejected_plan_status" == "200" ]] && grep -q '"allowed":false' "$data_rejected_plan_response"; then
+  echo " ✅ OK (200 rejected)"
+else
+  echo " ❌ FAIL (Expected rejected plan, got $data_rejected_plan_status)"
+  cat "$data_rejected_plan_response"
+  rm -f "$data_rejected_plan_response"
+  exit 1
+fi
+rm -f "$data_rejected_plan_response"
+
 echo -n "Checking POST /api/data/query (Disabled Local Mode)..."
 data_query_response=$(mktemp)
 data_query_status=$(curl -s -o "$data_query_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show AAPL price and volume","maxRows":25,"execute":true}' "${BASE_URL}/api/data/query")
@@ -122,6 +161,21 @@ else
   exit 1
 fi
 rm -f "$data_query_response"
+
+if [[ "${RUN_TEXT_TO_SQL_LIVE:-0}" == "1" ]]; then
+  echo -n "Checking POST /api/data/query (Guarded PostgreSQL Execute)..."
+  data_query_live_response=$(mktemp)
+  data_query_live_status=$(curl -s -o "$data_query_live_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show EUR/USD price snapshot","maxRows":5,"execute":true}' "${BASE_URL}/api/data/query")
+  if [[ "$data_query_live_status" == "200" ]] && grep -q '"data":' "$data_query_live_response"; then
+    echo " ✅ OK (200)"
+  else
+    echo " ❌ FAIL (Expected guarded data response, got $data_query_live_status)"
+    cat "$data_query_live_response"
+    rm -f "$data_query_live_response"
+    exit 1
+  fi
+  rm -f "$data_query_live_response"
+fi
 echo ""
 
 # --- Voice API Validation ---

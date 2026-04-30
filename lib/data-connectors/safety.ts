@@ -26,6 +26,11 @@ const BLOCKED_KEYWORDS = [
   "call",
   "execute",
   "merge",
+  "vacuum",
+  "analyze",
+  "listen",
+  "notify",
+  "unlisten",
 ];
 
 const WRITE_FUNCTION_PATTERNS = [
@@ -33,6 +38,13 @@ const WRITE_FUNCTION_PATTERNS = [
   /\bdblink\s*\(/i,
   /\blo_import\s*\(/i,
   /\blo_export\s*\(/i,
+  /\bpg_read_file\s*\(/i,
+  /\bpg_read_binary_file\s*\(/i,
+  /\bpg_ls_dir\s*\(/i,
+  /\bpg_stat_file\s*\(/i,
+  /\bpg_reload_conf\s*\(/i,
+  /\bpg_terminate_backend\s*\(/i,
+  /\bpg_cancel_backend\s*\(/i,
 ];
 
 export function parseAllowedViews(value: string | undefined): string[] {
@@ -43,6 +55,11 @@ export function parseAllowedViews(value: string | undefined): string[] {
       "v_symbol_daily_stats",
       "v_macro_calendar",
       "v_sentiment_rollup",
+      "v_fx_market_snapshots",
+      "v_fx_latest_news",
+      "v_fx_symbol_daily_stats",
+      "v_fx_macro_calendar",
+      "v_fx_sentiment_rollup",
     ];
   }
 
@@ -67,7 +84,7 @@ export function extractReferencedRelations(sql: string): string[] {
   let match = pattern.exec(sql);
 
   while (match) {
-    const relation = match[1].replace(/"/g, "").split(".").pop();
+    const relation = match[1].replace(/"/g, "").split(".").pop()?.toLowerCase();
     if (relation) relations.add(relation);
     match = pattern.exec(sql);
   }
@@ -117,7 +134,7 @@ export function validateReadOnlySql(sql: string, options: SqlSafetyOptions): Sql
   }
 
   const referencedRelations = extractReferencedRelations(normalizedSql);
-  const allowedViews = new Set(options.allowedViews);
+  const allowedViews = new Set(options.allowedViews.map((view) => view.toLowerCase()));
   const disallowedRelations = referencedRelations.filter((relation) => !allowedViews.has(relation));
   if (disallowedRelations.length > 0) {
     reasons.push(`Query references disallowed relations: ${disallowedRelations.join(", ")}.`);
@@ -142,4 +159,3 @@ export function validateReadOnlySql(sql: string, options: SqlSafetyOptions): Sql
     warnings,
   };
 }
-

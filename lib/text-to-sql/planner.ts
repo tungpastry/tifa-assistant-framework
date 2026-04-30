@@ -3,27 +3,46 @@ import type { QueryPlan, TextToSqlIntent, TextToSqlRequest } from "./types";
 import { getViewsForIntent } from "./semantic-layer";
 
 const SYMBOL_PATTERN = /\b[A-Z]{2,10}\b/g;
+const FX_PAIR_PATTERN = /\b([A-Z]{3})[\/_-]?([A-Z]{3})\b/g;
 
 export function classifyIntent(question: string): TextToSqlIntent {
   const normalized = question.toLowerCase();
 
-  if (normalized.includes("news") || normalized.includes("headline")) return "news_lookup";
+  if (normalized.includes("news") || normalized.includes("headline") || normalized.includes("driver")) return "news_lookup";
   if (normalized.includes("sentiment")) return "sentiment_lookup";
   if (normalized.includes("macro") || normalized.includes("calendar") || normalized.includes("event")) return "macro_calendar";
-  if (normalized.includes("return") || normalized.includes("volatility") || normalized.includes("daily")) return "symbol_stats";
-  if (normalized.includes("price") || normalized.includes("ohlc") || normalized.includes("volume") || normalized.includes("bar")) return "market_lookup";
+  if (normalized.includes("return") || normalized.includes("volatility") || normalized.includes("daily") || normalized.includes("pip")) return "symbol_stats";
+  if (normalized.includes("price") || normalized.includes("ohlc") || normalized.includes("volume") || normalized.includes("bar") || normalized.includes("snapshot")) return "market_lookup";
 
   return "unknown";
 }
 
 export function extractEntities(question: string) {
-  return [...new Set(question.match(SYMBOL_PATTERN) ?? [])];
+  const entities = new Set<string>();
+  let hasFxPair = false;
+  let pairMatch = FX_PAIR_PATTERN.exec(question);
+
+  while (pairMatch) {
+    hasFxPair = true;
+    const base = pairMatch[1];
+    const quote = pairMatch[2];
+    entities.add(`${base}/${quote}`);
+    entities.add(`${base}${quote}`);
+    pairMatch = FX_PAIR_PATTERN.exec(question);
+  }
+
+  for (const symbol of question.match(SYMBOL_PATTERN) ?? []) {
+    if (hasFxPair && /^[A-Z]{3}$/.test(symbol)) continue;
+    entities.add(symbol);
+  }
+
+  return [...entities];
 }
 
 export function createQueryPlan(request: TextToSqlRequest): QueryPlan {
   const intent = classifyIntent(request.question);
   const allowedViews = request.allowedViews ?? getFinancialViewNames();
-  const intentViews = getViewsForIntent(intent).filter((view) => allowedViews.includes(view));
+  const intentViews = getViewsForIntent(intent, allowedViews);
   const entities = extractEntities(request.question);
 
   return {
@@ -31,7 +50,7 @@ export function createQueryPlan(request: TextToSqlRequest): QueryPlan {
     entities,
     metrics: inferMetrics(intent),
     dimensions: inferDimensions(intent),
-    filters: entities.length > 0
+    filters: entities.length > 0 && ["market_lookup", "symbol_stats", "sentiment_lookup"].includes(intent)
       ? [{ field: "symbol", operator: "in", value: entities }]
       : [],
     allowedViews: intentViews,
@@ -69,4 +88,3 @@ function inferDimensions(intent: TextToSqlIntent) {
       return [];
   }
 }
-
