@@ -112,6 +112,9 @@ npm run build
 npm run start
 ```
 
+Ubuntu systemd templates are available in `deploy/systemd`; see
+[Local Systemd Deployment](docs/LOCAL_SYSTEMD_DEPLOYMENT.md).
+
 Run the local TTS worker:
 
 ```bash

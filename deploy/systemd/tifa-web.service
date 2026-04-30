@@ -1,0 +1,20 @@
+[Unit]
+Description=Tifa Assistant Framework Web
+After=network.target
+
+[Service]
+Type=simple
+User=nexus
+WorkingDirectory=/home/nexus/projects/tifa-assistant-framework
+Environment=NODE_ENV=production
+EnvironmentFile=/home/nexus/projects/tifa-assistant-framework/.env
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/home/nexus/projects/tifa-assistant-framework
+
+[Install]
+WantedBy=multi-user.target
