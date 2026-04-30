@@ -58,6 +58,16 @@ The roadmap keeps Tifa useful as the reference local-first app while progressive
 - Extract hooks and client helpers only when stable.
 - Add future UI affordances for provider/model badges, citations, tool traces, SQL previews, voice selector, quotas, and session folders.
 
+## Phase 9: Package Extraction
+
+- Treat `lib/tifa-*` directories as public internal package boundaries.
+- Prefer module-boundary imports for new code.
+- Add package-level README ownership notes and migration guidance.
+- Extract publishable packages only after consuming repositories validate the
+  public barrels in place.
+- Keep compatibility re-exports until TradeVibe, Fx-Sentinel, ZenoraAI,
+  nexuscrypto, and nexus-trade-radar have migrated.
+
 ## Repository Adoption Order
 
 1. Tifa: reference widget and local-first compatibility.
@@ -65,4 +75,3 @@ The roadmap keeps Tifa useful as the reference local-first app while progressive
 3. nexus-trade-radar: market dashboard and realtime signal assistant.
 4. ZenoraAI: 2D persona/assistant integration.
 5. nexuscrypto: crypto connector and dashboard assistant.
-

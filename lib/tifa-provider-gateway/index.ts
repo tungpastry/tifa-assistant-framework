@@ -1,4 +1,5 @@
 export * from "./gateway";
+export * from "./provider-catalog";
 export * from "./types";
 export * from "./providers/ollama";
 export * from "@/lib/llm/mock-provider";

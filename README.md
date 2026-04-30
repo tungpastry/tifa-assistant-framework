@@ -164,7 +164,9 @@ RUN_LIVE_SMOKE=1 npm run smoke:api
 - `lib/tifa-data-connectors`
 - `lib/tifa-widget`
 
-See [Module Boundaries](docs/MODULE_BOUNDARIES.md).
+See [Module Boundaries](docs/MODULE_BOUNDARIES.md),
+[P5 SaaS Extraction Plan](docs/P5_SAAS_EXTRACTION_PLAN.md), and
+[Consuming Repositories Migration Guide](docs/CONSUMING_REPOS_MIGRATION.md).
 
 ## SaaS Mode
 

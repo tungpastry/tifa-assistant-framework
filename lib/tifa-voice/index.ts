@@ -1,4 +1,5 @@
 export * from "./object-storage";
+export * from "./voice-catalog";
 export * from "@/lib/tts-cache";
 export * from "@/lib/tts-worker-status";
 export * from "@/lib/voice/provider-registry";

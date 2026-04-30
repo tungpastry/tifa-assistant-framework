@@ -1,4 +1,5 @@
 export * from "./audit-writer";
+export * from "./package-boundary";
 export * from "./usage-writer";
 export * from "@/lib/framework/config";
 export * from "@/lib/framework/errors";
