@@ -62,6 +62,18 @@ else
   rm -f "$temp_file"
   exit 1
 fi
+if [[ -z "${OPENAI_API_KEY:-}" ]] && ! grep -q '"provider":"openai","status":"disabled"' "$temp_file"; then
+  echo " ❌ FAIL (OpenAI provider should be disabled without OPENAI_API_KEY)"
+  cat "$temp_file"
+  rm -f "$temp_file"
+  exit 1
+fi
+if [[ -z "${GEMINI_API_KEY:-}" ]] && ! grep -q '"provider":"gemini","status":"disabled"' "$temp_file"; then
+  echo " ❌ FAIL (Gemini provider should be disabled without GEMINI_API_KEY)"
+  cat "$temp_file"
+  rm -f "$temp_file"
+  exit 1
+fi
 rm -f "$temp_file"
 echo ""
 

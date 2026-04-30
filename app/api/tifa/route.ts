@@ -45,7 +45,12 @@ export async function POST(req: Request) {
 
       const reply = response.text || "I'm here, but I couldn't think of a reply. Let’s talk markets 💬";
 
-      return NextResponse.json({ reply, model: response.model || config.model });
+      return NextResponse.json({
+        reply,
+        model: response.model || config.model,
+        provider: response.provider,
+        provider_type: response.provider === "ollama" ? "local" : "cloud",
+      });
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

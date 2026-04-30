@@ -9,7 +9,9 @@ import {
 } from "@/lib/runtime";
 import { parseTimeoutMs } from "@/lib/api";
 import { createPostgresFinancialConnector } from "@/lib/data-connectors/postgres";
+import { createProviderGatewayProviders, getProviderFallbackOrder } from "@/lib/tifa-provider-gateway";
 import { getTtsWorkerStatus } from "@/lib/tts-worker-status";
+import { createLocalAssistantConfig } from "@/lib/framework/config";
 
 type Status = "ok" | "degraded" | "disabled" | "down";
 
@@ -157,12 +159,33 @@ async function checkObjectStorage(): Promise<Check> {
 }
 
 async function checkProviderGateway(): Promise<Check> {
+  const assistantConfig = createLocalAssistantConfig();
+  const providers = createProviderGatewayProviders({
+    policy: assistantConfig.modelPolicy.routingMode,
+    fallbackOrder: assistantConfig.modelPolicy.fallbackOrder,
+    defaultProvider: assistantConfig.modelPolicy.defaultProvider,
+    defaultModel: assistantConfig.modelPolicy.defaultModel,
+  });
+  const providerHealth = await Promise.all(providers.map((provider) => provider.health()));
+  const requiredProvider = providerHealth.find((provider) => provider.provider === assistantConfig.modelPolicy.defaultProvider)
+    ?? providerHealth[0];
+  const status: Status = requiredProvider?.status === "ok"
+    ? "ok"
+    : providerHealth.some((provider) => provider.status === "ok")
+    ? "degraded"
+    : "disabled";
+
   return {
-    status: "ok",
+    status,
     details: {
-      scaffold: true,
+      scaffold: false,
       policies: ["local-first", "cloud-first", "cost-aware", "privacy-first"],
-      current_tifa_path: "TIFA_API_URL compatibility route",
+      active_policy: assistantConfig.modelPolicy.routingMode,
+      fallback_order: getProviderFallbackOrder({
+        policy: assistantConfig.modelPolicy.routingMode,
+        fallbackOrder: assistantConfig.modelPolicy.fallbackOrder,
+      }),
+      providers: providerHealth,
     },
     required: false,
   };

@@ -1,4 +1,5 @@
 import type { AssistantConfig, ModelPolicy, ToolPolicy, UiPolicy, VoicePolicy } from "./types";
+import type { LlmRouterPolicy } from "@/lib/llm/types";
 
 export type TifaRuntimeMode = "local" | "hybrid" | "saas";
 
@@ -23,6 +24,18 @@ function parseRuntimeMode(value: string | undefined): TifaRuntimeMode {
   return "local";
 }
 
+function parseRoutingPolicy(value: string | undefined): LlmRouterPolicy {
+  if (value === "cloud-first" || value === "cost-aware" || value === "privacy-first") {
+    return value;
+  }
+  return "local-first";
+}
+
+function parseFallbackOrder(value: string | undefined, fallback: string[]) {
+  if (!value) return fallback;
+  return value.split(",").map((provider) => provider.trim()).filter(Boolean);
+}
+
 export function getFrameworkRuntimeConfig(): FrameworkRuntimeConfig {
   const mode = process.env.TIFA_RUNTIME_MODE
     ? parseRuntimeMode(process.env.TIFA_RUNTIME_MODE)
@@ -43,12 +56,20 @@ export function getFrameworkRuntimeConfig(): FrameworkRuntimeConfig {
 }
 
 export function createDefaultModelPolicy(): ModelPolicy {
+  const routingMode = parseRoutingPolicy(process.env.TIFA_LLM_ROUTING_POLICY);
+  const defaultFallbacks: Record<LlmRouterPolicy, string[]> = {
+    "local-first": ["ollama", "qwen", "openai", "gemini"],
+    "cloud-first": ["openai", "gemini", "qwen", "ollama"],
+    "cost-aware": ["ollama", "qwen", "gemini", "openai"],
+    "privacy-first": ["ollama", "qwen", "openai", "gemini"],
+  };
+
   return {
-    routingMode: "local-first",
-    allowedProviders: ["ollama"],
-    defaultProvider: "ollama",
+    routingMode,
+    allowedProviders: ["ollama", "openai", "gemini", "qwen"],
+    defaultProvider: process.env.TIFA_LLM_PROVIDER || "ollama",
     defaultModel: process.env.TIFA_MODEL || "gemma3:1b",
-    fallbackOrder: ["ollama"],
+    fallbackOrder: parseFallbackOrder(process.env.TIFA_LLM_FALLBACK_ORDER, defaultFallbacks[routingMode]),
   };
 }
 

@@ -37,6 +37,9 @@ export function useTifaChat(options: TifaChatOptions) {
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [provider, setProvider] = useState<string | null>(null);
+  const [model, setModel] = useState<string | null>(null);
+  const [providerType, setProviderType] = useState<"local" | "cloud" | null>(null);
 
   const isMounted = useRef(false);
   const greetingInitializedRef = useRef(false);
@@ -153,13 +156,26 @@ export function useTifaChat(options: TifaChatOptions) {
         message: outgoingMessage,
         mood: moodLower,
         signal: abortControllerRef.current.signal,
+        onStart: (event) => {
+          setProvider(event.provider ?? null);
+          setModel(event.model ?? null);
+          setProviderType(event.providerType ?? null);
+        },
         onDelta: (delta) => {
           setTyping(false);
           streamedText += delta;
           updateLastTifaMessage(streamedText);
         },
+        onDone: (event) => {
+          setProvider(event.provider ?? null);
+          setModel(event.model ?? null);
+          setProviderType(event.providerType ?? null);
+        },
       });
       finalReply = result.text;
+      setProvider(result.provider ?? null);
+      setModel(result.model ?? null);
+      setProviderType(result.providerType ?? null);
       if (result.completed && finalReply.trim()) {
         shouldPlayVoice = true;
       }
@@ -171,7 +187,11 @@ export function useTifaChat(options: TifaChatOptions) {
       } else if (shouldFallback(streamErr)) {
         try {
           setTyping(true);
-          finalReply = await sendTifaMessage(outgoingMessage, moodLower);
+          const fallbackReply = await sendTifaMessage(outgoingMessage, moodLower);
+          finalReply = fallbackReply.text;
+          setProvider(fallbackReply.provider ?? null);
+          setModel(fallbackReply.model ?? null);
+          setProviderType(fallbackReply.providerType ?? null);
           updateLastTifaMessage(finalReply);
           if (finalReply.trim()) {
             shouldPlayVoice = true;
@@ -221,6 +241,9 @@ export function useTifaChat(options: TifaChatOptions) {
     typing,
     error,
     sending,
+    provider,
+    model,
+    providerType,
     sendMessage,
   };
 }

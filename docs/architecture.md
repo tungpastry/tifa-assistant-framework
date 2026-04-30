@@ -8,7 +8,7 @@ Tifa Assistant Framework is a local-first assistant runtime with optional SaaS s
 | --- | --- |
 | Widget | `TifaWidget`, client API helpers, browser voice playback |
 | Runtime | sessions, messages, runtime directories, worker status |
-| Provider gateway | LLM provider interface, routing policy, Ollama-compatible provider |
+| Provider gateway | LLM provider interface, routing policy, Ollama/OpenAI/Gemini/Qwen providers |
 | Voice | async voice jobs, cache, local worker, provider contracts |
 | Data connectors | safe connector contracts, PostgreSQL scaffold, query validation |
 | SaaS scaffolds | tenants, usage, audit, DB schema, optional adapters |

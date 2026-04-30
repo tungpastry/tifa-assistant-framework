@@ -52,6 +52,7 @@ export async function POST(req: Request) {
         let completedNormally = false;
         let endedWithError = false;
         let activeModel = config.model;
+        let activeProvider = "ollama";
 
         const enqueue = (event: string, data: unknown) => {
           if (!closed) {
@@ -76,13 +77,23 @@ export async function POST(req: Request) {
           })) {
             if (event.type === "start") {
               activeModel = event.model;
-              enqueue("start", { model: event.model });
+              activeProvider = event.provider;
+              enqueue("start", {
+                model: event.model,
+                provider: event.provider,
+                provider_type: event.provider === "ollama" ? "local" : "cloud",
+              });
             } else if (event.type === "delta") {
               enqueue("delta", { text: event.text });
             } else if (event.type === "done") {
               completedNormally = true;
               activeModel = event.response.model;
-              enqueue("done", { model: event.response.model });
+              activeProvider = event.response.provider;
+              enqueue("done", {
+                model: event.response.model,
+                provider: event.response.provider,
+                provider_type: event.response.provider === "ollama" ? "local" : "cloud",
+              });
             } else if (event.type === "error") {
               endedWithError = true;
               enqueue("error", { code: event.code, message: event.message });
@@ -95,7 +106,11 @@ export async function POST(req: Request) {
           enqueue("error", { code: "INTERNAL_ERROR", message: "Error reading upstream response." });
         } finally {
           if (!completedNormally && !endedWithError) {
-            enqueue("done", { model: activeModel });
+            enqueue("done", {
+              model: activeModel,
+              provider: activeProvider,
+              provider_type: activeProvider === "ollama" ? "local" : "cloud",
+            });
           }
           close();
         }

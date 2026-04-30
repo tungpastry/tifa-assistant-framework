@@ -52,24 +52,37 @@ export class LlmRouter {
   }
 
   async *stream(request: LlmRequest): AsyncIterable<LlmStreamEvent> {
-    const providerName = this.getFallbackOrder(request)[0];
-    const provider = providerName ? this.getProvider(providerName) : null;
+    const errors: string[] = [];
 
-    if (!provider) {
-      yield {
-        type: "error",
-        code: "PROVIDER_UNAVAILABLE",
-        message: "No LLM provider is available for streaming.",
-        retryable: true,
-      };
-      return;
+    for (const providerName of this.getFallbackOrder(request)) {
+      const provider = this.getProvider(providerName);
+      if (!provider) continue;
+
+      let failed = false;
+      for await (const event of provider.stream(request)) {
+        if (event.type === "error") {
+          failed = true;
+          errors.push(`${providerName}: ${event.message}`);
+          break;
+        }
+        yield event;
+        if (event.type === "done") return;
+      }
+
+      if (!failed) return;
     }
 
-    yield* provider.stream(request);
+    yield {
+      type: "error",
+      code: "PROVIDER_UNAVAILABLE",
+      message: errors.length > 0
+        ? `No LLM provider succeeded for ${this.policy} policy. ${errors.join(" | ")}`
+        : "No LLM provider is available for streaming.",
+      retryable: true,
+    };
   }
 }
 
 export function createLlmRouter(options: LlmRouterOptions) {
   return new LlmRouter(options);
 }
-

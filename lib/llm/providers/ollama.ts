@@ -1,20 +1,12 @@
 import { createTextResponse, type LlmProvider } from "../provider";
 import type { CostEstimate, LlmHealth, LlmRequest, LlmStreamEvent } from "../types";
+import { buildPrompt, resolveProviderModel } from "./shared";
 
 export interface OllamaProviderOptions {
   baseUrl?: string;
   generatePath?: string;
   defaultModel?: string;
   timeoutMs?: number;
-}
-
-function buildPrompt(input: LlmRequest) {
-  if (input.metadata?.prebuiltPrompt === true && input.messages.length > 0) {
-    return input.messages[0].content;
-  }
-
-  const lines = input.messages.map((message) => `${message.role}: ${message.content}`);
-  return [input.systemPrompt, ...lines].filter(Boolean).join("\n");
 }
 
 export class OllamaProvider implements LlmProvider {
@@ -33,6 +25,7 @@ export class OllamaProvider implements LlmProvider {
 
   async generate(input: LlmRequest) {
     const startedAt = Date.now();
+    const model = resolveProviderModel(input, this.name, this.defaultModel);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -41,7 +34,7 @@ export class OllamaProvider implements LlmProvider {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: input.model || this.defaultModel,
+          model,
           prompt: buildPrompt(input),
           stream: false,
           options: {
@@ -62,7 +55,7 @@ export class OllamaProvider implements LlmProvider {
       return createTextResponse({
         text,
         provider: this.name,
-        model: input.model || this.defaultModel,
+        model,
         startedAt,
         raw,
       });
@@ -73,7 +66,7 @@ export class OllamaProvider implements LlmProvider {
 
   async *stream(input: LlmRequest): AsyncIterable<LlmStreamEvent> {
     const startedAt = Date.now();
-    const model = input.model || this.defaultModel;
+    const model = resolveProviderModel(input, this.name, this.defaultModel);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
     let text = "";

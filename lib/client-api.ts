@@ -96,7 +96,14 @@ export async function playBase64Audio(
  * Sends a message to the non-streaming Tifa endpoint.
  * @returns The full reply from Tifa.
  */
-export async function sendTifaMessage(message: string, mood?: string): Promise<string> {
+export interface TifaReplyResult {
+  text: string;
+  model?: string;
+  provider?: string;
+  providerType?: "local" | "cloud";
+}
+
+export async function sendTifaMessage(message: string, mood?: string): Promise<TifaReplyResult> {
   const res = await fetch("/api/tifa", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -112,13 +119,20 @@ export async function sendTifaMessage(message: string, mood?: string): Promise<s
   }
 
   const data = await res.json();
-  return data.reply || "";
+  return {
+    text: data.reply || "",
+    model: typeof data.model === "string" ? data.model : undefined,
+    provider: typeof data.provider === "string" ? data.provider : undefined,
+    providerType: data.provider_type === "local" || data.provider_type === "cloud"
+      ? data.provider_type
+      : undefined,
+  };
 }
 
 export type TifaStreamEvent =
-  | { type: "start"; model?: string }
+  | { type: "start"; model?: string; provider?: string; providerType?: "local" | "cloud" }
   | { type: "delta"; text: string }
-  | { type: "done"; model?: string }
+  | { type: "done"; model?: string; provider?: string; providerType?: "local" | "cloud" }
   | { type: "error"; code?: string; message: string };
 
 export interface ChatSessionRecord {
@@ -201,10 +215,10 @@ export async function streamTifaReply(options: {
   mood?: string;
   signal?: AbortSignal;
   onDelta: (text: string) => void;
-  onStart?: (model?: string) => void;
-  onDone?: (model?: string) => void;
+  onStart?: (event: Extract<TifaStreamEvent, { type: "start" }>) => void;
+  onDone?: (event: Extract<TifaStreamEvent, { type: "done" }>) => void;
   onError?: (message: string, code?: string) => void;
-}): Promise<{ text: string; completed: boolean }> {
+}): Promise<TifaReplyResult & { completed: boolean }> {
   const res = await fetch("/api/tifa/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -258,7 +272,12 @@ export async function streamTifaReply(options: {
           const eventData = data as { [key: string]: unknown };
           switch (eventType) {
             case "start":
-              options.onStart?.(eventData.model as string | undefined);
+              options.onStart?.({
+                type: "start",
+                model: eventData.model as string | undefined,
+                provider: eventData.provider as string | undefined,
+                providerType: eventData.provider_type as "local" | "cloud" | undefined,
+              });
               break;
             case "delta":
               if(typeof eventData.text === "string") {
@@ -268,8 +287,19 @@ export async function streamTifaReply(options: {
               break;
             case "done":
               receivedDone = true;
-              options.onDone?.(eventData.model as string | undefined);
-              return { text: fullText, completed: receivedDone }; // End of stream
+              options.onDone?.({
+                type: "done",
+                model: eventData.model as string | undefined,
+                provider: eventData.provider as string | undefined,
+                providerType: eventData.provider_type as "local" | "cloud" | undefined,
+              });
+              return {
+                text: fullText,
+                completed: receivedDone,
+                model: eventData.model as string | undefined,
+                provider: eventData.provider as string | undefined,
+                providerType: eventData.provider_type as "local" | "cloud" | undefined,
+              }; // End of stream
             case "error":
               const message = typeof eventData.message === "string" ? eventData.message : "Tifa stream failed.";
               const code = typeof eventData.code === "string" ? eventData.code : undefined;

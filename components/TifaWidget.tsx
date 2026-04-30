@@ -22,6 +22,9 @@ export default function TifaWidget({ mood }: { mood: string }) {
     typing,
     error,
     sending,
+    provider,
+    model,
+    providerType,
     sendMessage,
   } = useTifaChat({
     mood,
@@ -63,6 +66,11 @@ export default function TifaWidget({ mood }: { mood: string }) {
           <div>
             <p className="font-semibold text-pink-300">Tifa</p>
             <p className="text-xs text-gray-300">Mood: {mood}</p>
+            {(provider || model) && (
+              <p className="mt-0.5 max-w-40 truncate text-[10px] uppercase tracking-normal text-gray-400">
+                {provider ?? "provider"} / {model ?? "model"} {providerType ? `(${providerType})` : ""}
+              </p>
+            )}
           </div>
         </div>
 

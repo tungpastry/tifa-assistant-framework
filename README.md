@@ -87,6 +87,17 @@ TIFA_API_URL=http://127.0.0.1:11434/api/generate
 TIFA_MODEL=gemma3:1b
 TIFA_TIMEOUT_MS=20000
 TIFA_PROMPT_PATH=prompts/TIFA_RUNTIME.md
+TIFA_LLM_ROUTING_POLICY=local-first
+TIFA_LLM_PROVIDER=ollama
+TIFA_LLM_FALLBACK_ORDER=ollama,qwen,openai,gemini
+
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-1.5-flash
+QWEN_API_KEY=
+QWEN_API_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-plus
 
 PIPER_BIN=/home/nexus/piper-env/bin/piper
 PIPER_MODEL=/home/nexus/piper/voices/en_US-libritts-high.onnx
