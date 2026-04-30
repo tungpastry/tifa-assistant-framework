@@ -2,10 +2,11 @@
 export const runtime = "nodejs";
 
 import { jsonError } from "@/lib/api";
+import { createLocalAssistantConfig } from "@/lib/framework/config";
+import { createLocalFirstProviderGateway } from "@/lib/tifa-provider-gateway";
 import {
   buildTifaPrompt,
   checkTifaRateLimit,
-  createAbortController,
   getTifaRuntimeConfig,
   parseTifaRequestBody,
   readTifaPrompt,
@@ -29,43 +30,28 @@ export async function POST(req: Request) {
     const rateLimitResponse = checkTifaRateLimit(req, config);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const abort = createAbortController(config.timeoutMs);
-
     const tifaPrompt = await readTifaPrompt(config.promptPath);
     const finalPrompt = buildTifaPrompt(
       tifaPrompt,
       parsedRequest.body.message,
       parsedRequest.body.mood
     );
-
-    let ollamaRes: Response;
-    try {
-      ollamaRes = await fetch(config.apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: config.model, prompt: finalPrompt, stream: true }),
-        signal: abort.controller.signal,
-      });
-    } catch (err) {
-      abort.clear();
-      throw err;
-    }
-
-    abort.clear();
-
-    if (!ollamaRes.ok) {
-      const errorText = await ollamaRes.text();
-      return jsonError("UPSTREAM_AI_ERROR", "The AI service failed to respond.", 502, {
-        details: { status: ollamaRes.status, statusText: ollamaRes.statusText, body: errorText },
-        retryable: true,
-      });
-    }
+    const assistantConfig = createLocalAssistantConfig();
+    const gateway = createLocalFirstProviderGateway({
+      policy: assistantConfig.modelPolicy.routingMode,
+      fallbackOrder: assistantConfig.modelPolicy.fallbackOrder,
+      defaultProvider: assistantConfig.modelPolicy.defaultProvider,
+      defaultModel: config.model,
+      timeoutMs: config.timeoutMs,
+    });
 
     // --- 3. SSE Stream Transformation ---
     const stream = new ReadableStream({
       async start(streamController) {
         let closed = false;
         let completedNormally = false;
+        let endedWithError = false;
+        let activeModel = config.model;
 
         const enqueue = (event: string, data: unknown) => {
           if (!closed) {
@@ -80,64 +66,36 @@ export async function POST(req: Request) {
           }
         };
 
-        // Ensure timeout is cleared and stream is closed on abort
-        abort.controller.signal.addEventListener("abort", () => {
-          enqueue("error", { code: "AI_TIMEOUT", message: "The AI service took too long to respond." });
-          close();
-        });
-
         try {
-          enqueue("start", { model: config.model });
-
-          if (!ollamaRes.body) {
-            enqueue("error", { code: "INTERNAL_ERROR", message: "Upstream response body is empty." });
-            return;
-          }
-
-          const reader = ollamaRes.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-
-          outer: while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              if (buffer) {
-                try {
-                  const json = JSON.parse(buffer);
-                  if (json.response) enqueue("delta", { text: json.response });
-                } catch {}
-              }
-              break;
+          for await (const event of gateway.stream({
+            tenantId: assistantConfig.tenantId,
+            assistantId: assistantConfig.id,
+            model: config.model,
+            messages: [{ role: "user", content: finalPrompt }],
+            metadata: { prebuiltPrompt: true },
+          })) {
+            if (event.type === "start") {
+              activeModel = event.model;
+              enqueue("start", { model: event.model });
+            } else if (event.type === "delta") {
+              enqueue("delta", { text: event.text });
+            } else if (event.type === "done") {
+              completedNormally = true;
+              activeModel = event.response.model;
+              enqueue("done", { model: event.response.model });
+            } else if (event.type === "error") {
+              endedWithError = true;
+              enqueue("error", { code: event.code, message: event.message });
+              return;
             }
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-
-            for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i].trim();
-              if (!line) continue;
-              try {
-                const json = JSON.parse(line);
-                if (json.error) throw new Error(json.error);
-                if (json.response) enqueue("delta", { text: json.response });
-                if (json.done) {
-                  completedNormally = true;
-                  break outer;
-                }
-              } catch (e) {
-                console.error("Error parsing Ollama stream chunk:", line, e);
-              }
-            }
-            buffer = lines[lines.length - 1];
           }
-          // If the loop finishes without hitting json.done, we still consider it normal completion.
-          if (!completedNormally) completedNormally = true;
 
         } catch {
+          endedWithError = true;
           enqueue("error", { code: "INTERNAL_ERROR", message: "Error reading upstream response." });
         } finally {
-          if (completedNormally) {
-            enqueue("done", { model: config.model });
+          if (!completedNormally && !endedWithError) {
+            enqueue("done", { model: activeModel });
           }
           close();
         }

@@ -9,6 +9,10 @@ export interface OllamaProviderOptions {
 }
 
 function buildPrompt(input: LlmRequest) {
+  if (input.metadata?.prebuiltPrompt === true && input.messages.length > 0) {
+    return input.messages[0].content;
+  }
+
   const lines = input.messages.map((message) => `${message.role}: ${message.content}`);
   return [input.systemPrompt, ...lines].filter(Boolean).join("\n");
 }

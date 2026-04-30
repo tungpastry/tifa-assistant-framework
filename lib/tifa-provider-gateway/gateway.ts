@@ -11,8 +11,8 @@ export function createLocalFirstProviderGateway(
     providers: [
       new OllamaProvider({
         defaultModel: config.defaultModel,
+        timeoutMs: config.timeoutMs,
       }),
     ],
   } satisfies LlmRouterOptions);
 }
-

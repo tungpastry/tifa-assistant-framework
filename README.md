@@ -73,6 +73,14 @@ TIFA_TIMEZONE=Asia/Ho_Chi_Minh
 TIFA_RUNTIME_DIR=runtime
 HOST=0.0.0.0
 PORT=3100
+TIFA_BASE_URL=http://127.0.0.1:3100
+
+TIFA_RUNTIME_MODE=local
+TIFA_SAAS_MODE=0
+TIFA_LOCAL_FIRST=1
+TIFA_DEFAULT_TENANT_ID=local
+TIFA_DEFAULT_ASSISTANT_ID=tifa-assistant
+TIFA_DEFAULT_LOCALE=en-US
 
 OLLAMA_URL=http://127.0.0.1:11434
 TIFA_API_URL=http://127.0.0.1:11434/api/generate
@@ -103,6 +111,9 @@ PORT=3202 npm run dev
 npm run build
 npm run start
 ```
+
+Ubuntu systemd templates are available in `deploy/systemd`; see
+[Local Systemd Deployment](docs/LOCAL_SYSTEMD_DEPLOYMENT.md).
 
 Run the local TTS worker:
 
@@ -149,10 +160,13 @@ See [Module Boundaries](docs/MODULE_BOUNDARIES.md).
 SaaS mode is scaffolded but disabled by default:
 
 ```env
+TIFA_RUNTIME_MODE=local
 TIFA_SAAS_MODE=0
+TIFA_LOCAL_FIRST=1
 TIFA_PG_ENABLED=0
 TIFA_REDIS_ENABLED=0
 TIFA_OBJECT_STORAGE_ENABLED=0
+TIFA_TEXT_TO_SQL_ENABLED=0
 ```
 
 See [SaaS Mode](docs/SAAS_MODE.md).

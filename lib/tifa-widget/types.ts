@@ -23,3 +23,8 @@ export interface TifaWidgetConfig {
   policies: TifaWidgetPolicies;
 }
 
+export interface TifaWidgetMessage {
+  id: string;
+  sender: "tifa" | "user";
+  text: string;
+}

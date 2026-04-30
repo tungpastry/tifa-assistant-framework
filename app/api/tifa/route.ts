@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
+import { createLocalAssistantConfig } from "@/lib/framework/config";
+import { createLocalFirstProviderGateway } from "@/lib/tifa-provider-gateway";
 import {
   buildTifaPrompt,
   checkTifaRateLimit,
-  createAbortController,
   getTifaRuntimeConfig,
   parseTifaRequestBody,
   readTifaPrompt,
@@ -18,9 +19,15 @@ export async function POST(req: Request) {
     const rateLimitResponse = checkTifaRateLimit(req, config);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const { controller, clear } = createAbortController(config.timeoutMs);
-
     try {
+      const assistantConfig = createLocalAssistantConfig();
+      const gateway = createLocalFirstProviderGateway({
+        policy: assistantConfig.modelPolicy.routingMode,
+        fallbackOrder: assistantConfig.modelPolicy.fallbackOrder,
+        defaultProvider: assistantConfig.modelPolicy.defaultProvider,
+        defaultModel: config.model,
+        timeoutMs: config.timeoutMs,
+      });
       const tifaPrompt = await readTifaPrompt(config.promptPath);
       const finalPrompt = buildTifaPrompt(
         tifaPrompt,
@@ -28,39 +35,26 @@ export async function POST(req: Request) {
         parsedRequest.body.mood
       );
 
-      const res = await fetch(config.apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: config.model,
-          prompt: finalPrompt,
-          stream: false,
-        }),
-        signal: controller.signal,
+      const response = await gateway.generate({
+        tenantId: assistantConfig.tenantId,
+        assistantId: assistantConfig.id,
+        model: config.model,
+        messages: [{ role: "user", content: finalPrompt }],
+        metadata: { prebuiltPrompt: true },
       });
 
-      clear();
+      const reply = response.text || "I'm here, but I couldn't think of a reply. Let’s talk markets 💬";
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        return jsonError("UPSTREAM_AI_ERROR", "The AI service failed to respond.", 502, {
-          details: { status: res.status, statusText: res.statusText, body: errorText },
-          retryable: true,
-        });
-      }
-
-      const json = await res.json();
-      const reply = json.response || "I'm here, but I couldn't think of a reply. Let’s talk markets 💬";
-
-      return NextResponse.json({ reply, model: config.model });
+      return NextResponse.json({ reply, model: response.model || config.model });
 
     } catch (err: unknown) {
-      clear();
-      if (err instanceof Error && err.name === 'AbortError') {
+      const message = err instanceof Error ? err.message : String(err);
+      if (err instanceof Error && (err.name === "AbortError" || message.includes("aborted"))) {
         return jsonError("AI_TIMEOUT", "The AI service took too long to respond.", 504, { retryable: true });
       }
-      return jsonError("INTERNAL_ERROR", "An unexpected error occurred while contacting the AI service.", 500, {
-        details: err instanceof Error ? err.message : String(err),
+      return jsonError("UPSTREAM_AI_ERROR", "The AI service failed to respond.", 502, {
+        details: message,
+        retryable: true,
       });
     }
   } catch (err: unknown) {
