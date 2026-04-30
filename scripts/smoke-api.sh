@@ -94,8 +94,34 @@ assert_status "GET /api/voice/jobs/nonexistent_job" "404" "${BASE_URL}/api/voice
 assert_status "GET /api/voice/jobs/nonexistent_job/audio" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job/audio"
 echo ""
 
+# --- Voice Job Lifecycle Without Live Piper ---
+echo "6. Voice Job Lifecycle"
+echo -n "Checking POST /api/voice/jobs (Queued or Cached)..."
+voice_job_response=$(mktemp)
+voice_job_text="Voice job validation smoke $(date +%s)"
+voice_job_status=$(curl -s -o "$voice_job_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${voice_job_text}\"}" "${BASE_URL}/api/voice/jobs")
+if [[ "$voice_job_status" == "200" || "$voice_job_status" == "202" ]]; then
+  validation_job_id=$(extract_json_field "$voice_job_response" "job_id")
+  validation_job_status=$(extract_json_field "$voice_job_response" "status")
+  echo " ✅ OK ($voice_job_status, $validation_job_id, $validation_job_status)"
+else
+  echo " ❌ FAIL (Expected 200 or 202, got $voice_job_status)"
+  cat "$voice_job_response"
+  rm -f "$voice_job_response"
+  exit 1
+fi
+rm -f "$voice_job_response"
+
+assert_status "GET /api/voice/jobs/{jobId}" "200" "${BASE_URL}/api/voice/jobs/${validation_job_id}"
+if [[ "$validation_job_status" == "ready" ]]; then
+  assert_status "GET /api/voice/jobs/{jobId}/audio" "200" "${BASE_URL}/api/voice/jobs/${validation_job_id}/audio"
+else
+  echo "Voice job ${validation_job_id} is ${validation_job_status}; run npm run tts:worker:once to process local queued jobs."
+fi
+echo ""
+
 # --- Chat History API Validation ---
-echo "6. Chat History API Validation"
+echo "7. Chat History API Validation"
 assert_status "POST /api/chat/sessions (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"mood":"focused"' "${BASE_URL}/api/chat/sessions"
 assert_status "GET /api/chat/sessions invalid id" "400" "${BASE_URL}/api/chat/sessions/not_a_session"
 assert_status "GET /api/chat/sessions nonexistent" "404" "${BASE_URL}/api/chat/sessions/session_00000000-0000-4000-8000-000000000000"
@@ -120,7 +146,7 @@ echo ""
 
 
 if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
-  echo "7. Live API Checks (RUN_LIVE_SMOKE=1)"
+  echo "8. Live API Checks (RUN_LIVE_SMOKE=1)"
   assert_status "POST /api/tifa (Live)" "200" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa"}' "${BASE_URL}/api/tifa"
   assert_status "GET /api/voice (Live)" "200" "${BASE_URL}/api/voice?text=Hello"
 
@@ -218,12 +244,12 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   rm -f "$audio_file"
   echo ""
 else
-    echo "7. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+    echo "8. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
 fi
 
 if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   echo ""
-  echo "8. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "9. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
   echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
 
   # Test Tifa rate limit
@@ -253,7 +279,7 @@ if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   fi
 else
     echo ""
-    echo "8. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
+    echo "9. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 
