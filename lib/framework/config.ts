@@ -10,6 +10,7 @@ export interface FrameworkRuntimeConfig {
   textToSqlEnabled: boolean;
   postgresEnabled: boolean;
   redisEnabled: boolean;
+  objectStorageEnabled: boolean;
 }
 
 function parseBooleanFlag(value: string | undefined, fallback = false) {
@@ -23,7 +24,11 @@ function parseRuntimeMode(value: string | undefined): TifaRuntimeMode {
 }
 
 export function getFrameworkRuntimeConfig(): FrameworkRuntimeConfig {
-  const mode = parseRuntimeMode(process.env.TIFA_RUNTIME_MODE);
+  const mode = process.env.TIFA_RUNTIME_MODE
+    ? parseRuntimeMode(process.env.TIFA_RUNTIME_MODE)
+    : parseBooleanFlag(process.env.TIFA_SAAS_MODE)
+    ? "saas"
+    : "local";
 
   return {
     mode,
@@ -33,6 +38,7 @@ export function getFrameworkRuntimeConfig(): FrameworkRuntimeConfig {
     textToSqlEnabled: parseBooleanFlag(process.env.TIFA_TEXT_TO_SQL_ENABLED),
     postgresEnabled: parseBooleanFlag(process.env.TIFA_PG_ENABLED),
     redisEnabled: parseBooleanFlag(process.env.TIFA_REDIS_ENABLED),
+    objectStorageEnabled: parseBooleanFlag(process.env.TIFA_OBJECT_STORAGE_ENABLED),
   };
 }
 
@@ -90,4 +96,3 @@ export function createLocalAssistantConfig(): AssistantConfig {
     uiPolicy: createDefaultUiPolicy(),
   };
 }
-

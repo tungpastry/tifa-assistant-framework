@@ -140,6 +140,24 @@ async function checkRedis(): Promise<Check> {
   };
 }
 
+async function checkObjectStorage(): Promise<Check> {
+  if (process.env.TIFA_OBJECT_STORAGE_ENABLED !== "1") {
+    return {
+      status: "disabled",
+      details: { reason: "TIFA_OBJECT_STORAGE_ENABLED is not 1." },
+      required: false,
+    };
+  }
+
+  return {
+    status: "degraded",
+    details: {
+      note: "Object storage health is a placeholder until a storage client is wired.",
+    },
+    required: false,
+  };
+}
+
 async function checkProviderGateway(): Promise<Check> {
   return {
     status: "ok",
@@ -176,11 +194,12 @@ export async function GET() {
     checkTtsWorker(),
     checkPostgresConnector(),
     checkRedis(),
+    checkObjectStorage(),
     checkProviderGateway(),
     checkTextToSql(),
   ]);
 
-  const [runtime, ollama, piper, ttsWorker, postgres, redis, providerGateway, textToSql] = checks;
+  const [runtime, ollama, piper, ttsWorker, postgres, redis, objectStorage, providerGateway, textToSql] = checks;
   const requiredChecks = checks.filter((check) => check.required);
 
   const overallStatus: Status = requiredChecks.some(c => c.status === "down")
@@ -203,6 +222,7 @@ export async function GET() {
         tts_worker: ttsWorker,
         postgres,
         redis,
+        object_storage: objectStorage,
         provider_gateway: providerGateway,
         text_to_sql: textToSql,
       },
