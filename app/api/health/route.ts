@@ -10,6 +10,7 @@ import {
 } from "@/lib/runtime";
 import { parseTimeoutMs } from "@/lib/api";
 import { createPostgresFinancialConnector } from "@/lib/data-connectors/postgres";
+import { getTtsWorkerStatus } from "@/lib/tts-worker-status";
 
 type Status = "ok" | "degraded" | "disabled" | "down";
 
@@ -93,6 +94,22 @@ async function checkPiper(): Promise<Check> {
   return { status, details, required: true };
 }
 
+async function checkTtsWorker(): Promise<Check> {
+  const workerStatus = await getTtsWorkerStatus();
+
+  return {
+    status: workerStatus.status,
+    details: {
+      heartbeat: workerStatus.heartbeat,
+      heartbeat_age_ms: workerStatus.heartbeat_age_ms,
+      stale_after_ms: workerStatus.stale_after_ms,
+      queue: workerStatus.queue,
+      ...workerStatus.details,
+    },
+    required: false,
+  };
+}
+
 async function checkPostgresConnector(): Promise<Check> {
   const connector = createPostgresFinancialConnector();
   const health = await connector.health();
@@ -156,13 +173,14 @@ export async function GET() {
     checkRuntime(),
     checkOllama(),
     checkPiper(),
+    checkTtsWorker(),
     checkPostgresConnector(),
     checkRedis(),
     checkProviderGateway(),
     checkTextToSql(),
   ]);
 
-  const [runtime, ollama, piper, postgres, redis, providerGateway, textToSql] = checks;
+  const [runtime, ollama, piper, ttsWorker, postgres, redis, providerGateway, textToSql] = checks;
   const requiredChecks = checks.filter((check) => check.required);
 
   const overallStatus: Status = requiredChecks.some(c => c.status === "down")
@@ -182,6 +200,7 @@ export async function GET() {
         runtime,
         ollama,
         piper,
+        tts_worker: ttsWorker,
         postgres,
         redis,
         provider_gateway: providerGateway,

@@ -11,6 +11,7 @@ const rootDir = path.resolve(__dirname, "..");
 const runtimeDir = process.env.TRADEVIBE_RUNTIME_DIR || path.join(rootDir, "runtime");
 const audioCacheDir = path.join(runtimeDir, "audio_cache");
 const ttsJobsDir = path.join(runtimeDir, "tts_jobs");
+const heartbeatPath = path.join(runtimeDir, "tts_worker_heartbeat.json");
 const intervalMs = parsePositiveInt(process.env.TRADEVIBE_TTS_WORKER_INTERVAL_MS, 1000);
 const piperTimeoutMs = parsePositiveInt(process.env.PIPER_TIMEOUT_MS, 10000);
 const once = process.argv.includes("--once");
@@ -94,6 +95,56 @@ async function listQueuedJobs() {
   }
 
   return jobs.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+
+async function readQueueStats() {
+  await ensureRuntimeDirs();
+  const stats = {
+    total: 0,
+    queued: 0,
+    processing: 0,
+    ready: 0,
+    failed: 0,
+    unknown: 0,
+  };
+  const entries = await fs.readdir(ttsJobsDir, { withFileTypes: true });
+
+  await Promise.all(entries.map(async (entry) => {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) return;
+
+    try {
+      const job = await readJson(path.join(ttsJobsDir, entry.name));
+      const status = ["queued", "processing", "ready", "failed"].includes(job.status)
+        ? job.status
+        : "unknown";
+      stats.total += 1;
+      stats[status] += 1;
+    } catch {
+      stats.total += 1;
+      stats.unknown += 1;
+    }
+  }));
+
+  return stats;
+}
+
+async function writeHeartbeat(processedLastTick, status = "ok") {
+  try {
+    const queue = await readQueueStats();
+    await writeJson(heartbeatPath, {
+      status,
+      pid: process.pid,
+      updated_at: new Date().toISOString(),
+      processed_last_tick: processedLastTick,
+      queue_depth: queue.queued,
+      queue,
+      runtime_dir: runtimeDir,
+      audio_cache_dir: audioCacheDir,
+      tts_jobs_dir: ttsJobsDir,
+    });
+  } catch (error) {
+    console.warn("Failed to write TTS worker heartbeat:", error);
+  }
 }
 
 async function updateJob(job) {
@@ -202,6 +253,7 @@ async function runOnce() {
   for (const job of queuedJobs) {
     await processQueuedJob(job);
   }
+  await writeHeartbeat(queuedJobs.length);
   return queuedJobs.length;
 }
 

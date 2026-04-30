@@ -45,6 +45,10 @@ export function getTtsJobsDir() {
   return path.join(getRuntimeDir(), "tts_jobs");
 }
 
+export function getTtsWorkerHeartbeatPath() {
+  return path.join(getRuntimeDir(), "tts_worker_heartbeat.json");
+}
+
 export function getChatSessionsDir() {
   return path.join(getRuntimeDir(), "chat_sessions");
 }
