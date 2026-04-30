@@ -58,7 +58,7 @@ sudo systemctl restart tifa-tts-worker
 ## Healthcheck
 
 ```bash
-curl -s http://127.0.0.1:3100/api/health | jq .
+curl -s http://127.0.0.1:3205/api/health | jq .
 ```
 
 ## Worker Heartbeat
@@ -69,3 +69,12 @@ cat /home/nexus/projects/tifa-assistant-framework/runtime/tts_worker_heartbeat.j
 
 If the heartbeat is missing and the queue has pending jobs, `/api/health` should
 report the worker as degraded rather than failing the entire local runtime.
+
+## UbuntuServer Port Convention
+
+- tradevibe-org uses port 3100.
+- tifa-assistant-framework uses port 3205.
+- tifa-web reads PORT from /home/nexus/projects/tifa-assistant-framework/.env.
+- Tifa healthcheck: http://127.0.0.1:3205/api/health.
+- Do not use port 3100 for Tifa on this server.
+
