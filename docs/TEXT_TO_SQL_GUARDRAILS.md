@@ -4,7 +4,7 @@ Tifa Assistant Framework should support safe financial database questions withou
 
 ## Current State
 
-TradeVibe does not currently execute Text-to-SQL. The current assistant uses local chat routes and local runtime artifacts. Any Text-to-SQL feature must be added as an opt-in, guarded scaffold.
+Tifa does not currently execute Text-to-SQL. The current assistant uses local chat routes and local runtime artifacts. Any Text-to-SQL feature must be added as an opt-in, guarded scaffold.
 
 ## Target Pipeline
 

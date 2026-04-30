@@ -4,7 +4,7 @@ This document describes the current security posture and the target SaaS securit
 
 ## Current Local-First Security Boundary
 
-TradeVibe currently assumes a trusted single-node deployment:
+Tifa currently assumes a trusted single-node deployment:
 
 - Local filesystem runtime under `runtime/`.
 - Local Ollama-compatible model endpoint through `TIFA_API_URL`.

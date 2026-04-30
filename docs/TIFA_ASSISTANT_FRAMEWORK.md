@@ -1,12 +1,12 @@
 # Tifa Assistant Framework
 
-Tifa Assistant Framework is the planned reusable assistant foundation extracted from the hardened TradeVibe ChatTifa runtime. TradeVibe remains the reference local-first application while the framework grows service-first modules that can be reused by Fx-Sentinel, nexus-trade-radar, ZenoraAI, nexuscrypto, and future products.
+Tifa Assistant Framework is the planned reusable assistant foundation extracted from the hardened Tifa TifaWidget runtime. Tifa remains the reference local-first application while the framework grows service-first modules that can be reused by Fx-Sentinel, nexus-trade-radar, ZenoraAI, nexuscrypto, and future products.
 
 This document is a blueprint, not a claim that the repository is production SaaS ready today.
 
-## Current TradeVibe Runtime
+## Current Tifa Runtime
 
-TradeVibe currently runs as a single-node, local-first assistant:
+Tifa currently runs as a single-node, local-first assistant:
 
 | Area | Current behavior |
 | --- | --- |
@@ -42,7 +42,7 @@ The target SaaS runtime moves durable state and coordination out of local proces
 | Observability | Metrics, structured logs, traces, health categories, and audit events |
 | Admin | Policies, API keys, provider key metadata, quotas, and billing/account views |
 
-TradeVibe should be able to run in local-first mode without PostgreSQL, Redis, or object storage. SaaS mode should be opt-in through configuration and deployment wiring.
+Tifa should be able to run in local-first mode without PostgreSQL, Redis, or object storage. SaaS mode should be opt-in through configuration and deployment wiring.
 
 ## Framework Modules
 
@@ -56,7 +56,7 @@ The reusable framework should be split into clear module boundaries:
 | `tifa-data-connectors` | PostgreSQL and future TimescaleDB, crypto, forex, stocks, and news connectors |
 | `tifa-text-to-sql` | Intent classification, QueryPlan generation, semantic layer, SQL compiler, and guardrails |
 | `tifa-voice` | Voice provider interface, Piper, viPiper, VieNeu facade, cache, jobs, and voice assets |
-| `tifa-widget-react` | ChatTifa reference widget, React hooks, streaming client, voice client, and UI extension points |
+| `tifa-widget-react` | TifaWidget reference widget, React hooks, streaming client, voice client, and UI extension points |
 | `tifa-sdk` | Browser/server SDK for sessions, messages, streams, tools, voice, and usage events |
 | `tifa-admin-console` | Tenant, assistant, user, API key, provider key, usage, policy, and audit administration |
 
@@ -66,7 +66,7 @@ The repository can start with `lib/*` scaffold modules and later extract package
 
 | Repository | Role |
 | --- | --- |
-| TradeVibe | Reference widget and local-first baseline |
+| Tifa | Reference widget and local-first baseline |
 | Fx-Sentinel | Finance/news/PostgreSQL/Text-to-SQL reference integration |
 | nexus-trade-radar | Market dashboard and realtime signal assistant |
 | ZenoraAI | 2D assistant/persona reference integration |
@@ -78,6 +78,6 @@ The repository can start with `lib/*` scaffold modules and later extract package
 - Keep `/api/tifa` and `/api/tifa/stream` compatible with the current client.
 - Keep async voice job semantics and legacy voice fallback.
 - Keep local chat sessions working without a database.
-- Do not require Redis, PostgreSQL, object storage, or auth for default TradeVibe smoke tests.
+- Do not require Redis, PostgreSQL, object storage, or auth for default Tifa smoke tests.
 - Prefer additive contracts and compatibility shims over broad rewrites.
 

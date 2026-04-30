@@ -1,5 +1,5 @@
 -- Tifa Assistant Framework SaaS schema draft.
--- This file is a planning scaffold. It is not applied by TradeVibe local mode.
+-- This file is a planning scaffold. It is not applied by local mode.
 
 CREATE TABLE tenants (
   id uuid PRIMARY KEY,
@@ -225,4 +225,3 @@ CREATE INDEX idx_audit_events_tenant_created ON audit_events (tenant_id, created
 --   ALTER TABLE assistant_sessions ENABLE ROW LEVEL SECURITY;
 --   CREATE POLICY tenant_isolation ON assistant_sessions
 --     USING (tenant_id::text = current_setting('app.tenant_id', true));
-

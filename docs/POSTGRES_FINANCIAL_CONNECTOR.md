@@ -1,6 +1,6 @@
 # PostgreSQL Financial Connector
 
-The PostgreSQL financial connector is a scaffold for safe financial data access in Tifa Assistant Framework. It is disabled by default and does not require a live database for TradeVibe smoke tests.
+The PostgreSQL financial connector is a scaffold for safe financial data access in Tifa Assistant Framework. It is disabled by default and does not require a live database for Tifa smoke tests.
 
 ## Environment
 

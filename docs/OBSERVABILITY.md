@@ -1,6 +1,6 @@
 # Observability
 
-Tifa Assistant Framework should expose metrics, structured logs, traces, and audit events. TradeVibe currently has a local health endpoint and process logs; SaaS mode should add durable telemetry.
+Tifa Assistant Framework should expose metrics, structured logs, traces, and audit events. Tifa currently has a local health endpoint and process logs; SaaS mode should add durable telemetry.
 
 ## Health Status
 

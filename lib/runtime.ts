@@ -2,9 +2,7 @@ import fs from "fs";
 import path from "path";
 
 export const TIFA_TIMEZONE =
-  process.env.TIFA_TIMEZONE ||
-  process.env.TRADEVIBE_TIMEZONE ||
-  "Asia/Ho_Chi_Minh";
+  process.env.TIFA_TIMEZONE || "Asia/Ho_Chi_Minh";
 
 export function getRepoRoot() {
   return process.cwd();
@@ -20,9 +18,7 @@ export function resolveFromRepoRoot(targetPath: string) {
 
 export function getRuntimeDir() {
   return resolveFromRepoRoot(
-    process.env.TIFA_RUNTIME_DIR ||
-      process.env.TRADEVIBE_RUNTIME_DIR ||
-      "runtime"
+    process.env.TIFA_RUNTIME_DIR || "runtime"
   );
 }
 

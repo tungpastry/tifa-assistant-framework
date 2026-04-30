@@ -1,6 +1,6 @@
 # Tifa Operations SOP
 
-This SOP covers the current TradeVibe local-first runtime and the SaaS-readiness scaffolds added for Tifa Assistant Framework.
+This SOP covers the current Tifa local-first runtime and the SaaS-readiness scaffolds added for Tifa Assistant Framework.
 
 ## Local Health
 
@@ -13,8 +13,8 @@ curl -s http://127.0.0.1:3100/api/health
 Health categories:
 
 - `runtime`: required local directories.
-- `ollama`: required local model endpoint for current TradeVibe chat.
-- `piper`: required local voice provider for current TradeVibe voice.
+- `ollama`: required local model endpoint for current Tifa chat.
+- `piper`: required local voice provider for current Tifa voice.
 - `postgres`: optional SaaS connector scaffold.
 - `redis`: optional SaaS cache/rate-limit/queue placeholder.
 - `provider_gateway`: optional LLM gateway scaffold.
@@ -52,7 +52,7 @@ npm run cleanup:runtime
 Actual deletion requires:
 
 ```bash
-TRADEVIBE_CLEANUP_DRY_RUN=0 npm run cleanup:runtime
+TIFA_CLEANUP_DRY_RUN=0 npm run cleanup:runtime
 ```
 
 Cleanup is scoped to runtime audio cache, TTS jobs, and logs.

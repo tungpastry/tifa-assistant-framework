@@ -1,13 +1,13 @@
-# Migration From Local TradeVibe To SaaS Runtime
+# Migration From Local Tifa To SaaS Runtime
 
-This is a staged migration plan. It is not an instruction to turn the current local TradeVibe deployment into SaaS in one release.
+This is a staged migration plan. It is not an instruction to turn the current local Tifa deployment into SaaS in one release.
 
 ## Stage 1: Keep Local Mode As Baseline
 
 - Keep filesystem runtime enabled.
 - Keep `TIFA_API_URL` and local Ollama-compatible chat.
 - Keep Piper voice jobs and cache.
-- Keep current ChatTifa widget behavior.
+- Keep current TifaWidget widget behavior.
 - Add framework contracts and docs only.
 
 ## Stage 2: Add Adapter Interfaces
@@ -50,5 +50,5 @@ This is a staged migration plan. It is not an instruction to turn the current lo
 
 ## Rollback Principle
 
-Every SaaS adapter should be behind configuration. If a SaaS dependency is disabled or unavailable, local TradeVibe should still run with the current filesystem behavior unless explicitly started in strict SaaS mode.
+Every SaaS adapter should be behind configuration. If a SaaS dependency is disabled or unavailable, local Tifa should still run with the current filesystem behavior unless explicitly started in strict SaaS mode.
 

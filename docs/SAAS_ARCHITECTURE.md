@@ -1,10 +1,10 @@
 # Tifa SaaS Architecture
 
-This document describes the target SaaS architecture for Tifa Assistant Framework. TradeVibe remains local-first today; SaaS services are introduced as optional foundations.
+This document describes the target SaaS architecture for Tifa Assistant Framework. Tifa remains local-first today; SaaS services are introduced as optional foundations.
 
 ## Runtime Comparison
 
-| Capability | Current TradeVibe | SaaS target |
+| Capability | Current Tifa | SaaS target |
 | --- | --- | --- |
 | Tenants | Single local app | `tenants` table plus tenant context on every owned resource |
 | Users | Browser-only usage | Users, memberships, roles, and assistant permissions |
@@ -21,7 +21,7 @@ This document describes the target SaaS architecture for Tifa Assistant Framewor
 
 ### Presentation Layer
 
-TradeVibe's `components/ChatTifa.tsx` remains the reference UI. The target UI layer should evolve into:
+Tifa's `components/TifaWidget.tsx` remains the reference UI. The target UI layer should evolve into:
 
 - React widget package with stable props.
 - Client SDK for sessions, streams, voice jobs, and tool traces.
@@ -94,7 +94,7 @@ Widget/SDK
 
 | Mode | Description |
 | --- | --- |
-| `local` | Current TradeVibe behavior, filesystem runtime, local Ollama, local Piper |
+| `local` | Current Tifa behavior, filesystem runtime, local Ollama, local Piper |
 | `hybrid` | Local widget/runtime with optional cloud LLM or optional data connector |
 | `saas` | Tenant-aware runtime backed by PostgreSQL, Redis, object storage, auth, metering, and admin policies |
 

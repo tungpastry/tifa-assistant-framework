@@ -32,7 +32,7 @@ The facade service should:
 - Emit provider-level metrics.
 - Keep model license metadata visible.
 
-## TradeVibe Runtime Compatibility
+## Tifa Runtime Compatibility
 
-TradeVibe remains Piper-first by default. VieNeu is disabled unless `TIFA_VIENEU_ENABLED=1`, so unavailable VieNeu services must not fail local readiness or smoke tests.
+Tifa remains Piper-first by default. VieNeu is disabled unless `TIFA_VIENEU_ENABLED=1`, so unavailable VieNeu services must not fail local readiness or smoke tests.
 

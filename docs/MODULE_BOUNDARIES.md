@@ -1,6 +1,6 @@
 # Tifa Module Boundaries
 
-This repo currently contains the TradeVibe reference app and framework scaffolds in one Next.js codebase. The `lib/tifa-*` directories define package boundaries for future extraction while preserving existing imports.
+This repo contains framework scaffolds in one Next.js codebase. The `lib/tifa-*` directories define package boundaries for future extraction while preserving existing imports.
 
 | Module | Purpose |
 | --- | --- |
@@ -23,4 +23,3 @@ Existing imports are intentionally left in place:
 - `@/lib/voice/*`
 
 The new module directories mostly re-export current implementations. This keeps the API routes stable and lets framework consumers adopt the clearer boundaries gradually.
-

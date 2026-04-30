@@ -1,8 +1,8 @@
 # UX/UI SaaS Readiness
 
-ChatTifa remains the reference widget for TradeVibe. This plan documents SaaS-ready UX concepts without redesigning the current floating assistant.
+TifaWidget remains the reference widget for Tifa. This plan documents SaaS-ready UX concepts without redesigning the current floating assistant.
 
-## Preserve Current ChatTifa Behavior
+## Preserve Current TifaWidget Behavior
 
 Keep:
 
@@ -35,7 +35,7 @@ Future `tifa-widget-react` work should prepare extension points for:
 
 ## Design Guardrails
 
-- Do not make `components/ChatTifa.tsx` larger as the long-term strategy.
+- Do not make `components/TifaWidget.tsx` larger as the long-term strategy.
 - Extract client hooks and UI primitives only when stable.
 - Keep dense operational controls out of the default compact widget.
 - Prefer progressive disclosure for tool traces, citations, and SQL previews.
@@ -70,7 +70,7 @@ Target SaaS states should include:
 
 | Repository | UX focus |
 | --- | --- |
-| TradeVibe | Reference local-first floating assistant |
+| Tifa | Reference local-first floating assistant |
 | Fx-Sentinel | Financial evidence, SQL preview, news citations |
 | nexus-trade-radar | Market dashboard signals and realtime trace |
 | ZenoraAI | Persona and 2D assistant expression hooks |

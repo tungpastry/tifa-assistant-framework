@@ -1,6 +1,6 @@
 # SaaS Database Schema
 
-`sql/tifa_saas_schema.sql` is a tenant-aware schema draft for Tifa Assistant Framework SaaS mode. TradeVibe local mode does not apply or require this schema.
+`sql/tifa_saas_schema.sql` is a tenant-aware schema draft for Tifa Assistant Framework SaaS mode. Tifa local mode does not apply or require this schema.
 
 ## Tables
 
@@ -44,7 +44,7 @@ The draft adds indexes for common access paths:
 
 ## Local Compatibility
 
-The existing TradeVibe filesystem runtime remains the default:
+The existing Tifa filesystem runtime remains the default:
 
 - `runtime/chat_sessions/`
 - `runtime/tts_jobs/`

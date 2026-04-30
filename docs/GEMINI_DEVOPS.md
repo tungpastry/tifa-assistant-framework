@@ -1,39 +1,35 @@
-# Gemini CLI DevOps Guide — TradeVibe
+# Gemini CLI DevOps Guide
 
-This guide defines how Gemini CLI should be used inside the `tradevibe-org` repository.
+Gemini CLI is a development and DevOps assistant for the `tifa-assistant-framework` repository.
 
-Gemini CLI is a **development and DevOps assistant only**. It must help inspect, plan, patch, validate, and document the repo. It must not act as the runtime Tifa assistant and must not generate fake runtime artifacts.
-
----
-
-## 1. Current Repo Identity
+## Repo Identity
 
 ```text
-Repo: tradevibe-org
-Path: /home/nexus/projects/tradevibe-org
-Server profile: Ubuntu Server 192.168.1.30, user nexus
-Role: Local-first AI trader companion
-Frontend: Next.js 15.5.5 + React 19.1.0
-Runtime: filesystem artifacts under runtime/
-Chat: ChatTifa with SSE streaming and non-streaming fallback
-Voice: Piper TTS with cache-first voice jobs and legacy fallback
-AI backend: local Ollama-compatible endpoint
-Deployment: single-node self-hosted foundation
+Repo: tifa-assistant-framework
+Path: /home/nexus/projects/tifa-assistant-framework
+Role: Local-first assistant framework
+Frontend: Next.js 15.5.15 + React 19.1.0
+Runtime: filesystem state under runtime/
+Chat: TifaWidget with SSE streaming and non-streaming fallback
+Voice: Piper-compatible TTS with cache-first jobs and local worker
+AI backend: Ollama-compatible endpoint by default
 ```
 
-Runtime cleanup is available through `npm run cleanup:runtime`. The command is a dry-run by default and only scopes deletion to `runtime/audio_cache`, `runtime/tts_jobs`, and `runtime/logs`.
+## Safe Workflow
 
-Local async TTS processing is available through `npm run tts:worker:once` for a single pass or `npm run tts:worker` for a loop. The worker only reads queued jobs from `runtime/tts_jobs` and writes generated WAV/cache metadata under `runtime/audio_cache`.
+- Inspect before patching.
+- Keep local-first mode working.
+- Do not add secrets to the repository.
+- Do not enable optional SaaS services by default.
+- Validate with lint, build, smoke tests, and worker syntax checks.
 
-## 2. SaaS Framework Readiness
+## Local Worker
 
-The repository now includes additive Tifa Assistant Framework scaffolds. Gemini CLI may inspect and update them, but must preserve local TradeVibe compatibility.
+Use:
 
-Current readiness surfaces:
+```bash
+npm run tts:worker:once
+npm run tts:worker
+```
 
-- `/api/health` reports required local checks plus optional SaaS categories.
-- `docs/OBSERVABILITY.md` defines target metrics and audit events.
-- `docs/OPS_SOP.md` defines validation and incident triage commands.
-- `sql/tifa_saas_schema.sql` is a schema draft only and is not applied in local mode.
-
-Optional SaaS checks may report `disabled`. That is healthy for local-first TradeVibe unless strict SaaS mode is intentionally enabled.
+The worker reads queued jobs from `runtime/tts_jobs`, writes audio/cache metadata under `runtime/audio_cache`, and updates `runtime/tts_worker_heartbeat.json`.

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RUNTIME_DIR="${TIFA_RUNTIME_DIR:-${TRADEVIBE_RUNTIME_DIR:-$ROOT_DIR/runtime}}"
+RUNTIME_DIR="${TIFA_RUNTIME_DIR:-$ROOT_DIR/runtime}"
 LOG_DIR="$RUNTIME_DIR/logs"
 AUDIO_CACHE_DIR="$RUNTIME_DIR/audio_cache"
 TTS_JOBS_DIR="$RUNTIME_DIR/tts_jobs"

@@ -1,6 +1,6 @@
 # SaaS Mode Scaffold
 
-Tifa Assistant Framework has optional SaaS scaffolds, but local TradeVibe reference mode remains the default. Do not enable SaaS mode unless the required services are intentionally wired.
+Tifa Assistant Framework has optional SaaS scaffolds, but local Tifa reference mode remains the default. Do not enable SaaS mode unless the required services are intentionally wired.
 
 ## Feature Flags
 
@@ -39,7 +39,7 @@ TIFA_VIENEU_ENABLED=0
 Local mode still uses:
 
 - filesystem runtime
-- local ChatTifa sessions
+- local TifaWidget sessions
 - local TTS jobs
 - local Piper audio cache
 - in-memory rate limits

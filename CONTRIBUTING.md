@@ -1,4 +1,4 @@
-# Contributing to TradeVibe
+# Contributing to Tifa Assistant Framework
 
 We love your input! We want to make contributing to this project as easy and transparent as possible.
 
@@ -16,4 +16,4 @@ We love your input! We want to make contributing to this project as easy and tra
 5. Submit a Pull Request targeting the `main` branch.
 
 ## Commit Guidelines
-We use conventional commits (e.g., `feat: add new player`, `fix: resolve audio bug`, `docs: update readme`).
+We use conventional commits, for example `feat: add provider adapter`, `fix: resolve audio bug`, or `docs: update readme`.

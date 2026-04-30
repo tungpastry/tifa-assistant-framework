@@ -1,6 +1,6 @@
 # Voice Providers
 
-TradeVibe currently uses local Piper TTS through async voice jobs and a filesystem audio cache. The Tifa voice layer should preserve that behavior while adding provider contracts for SaaS and multilingual deployments.
+Tifa currently uses local Piper TTS through async voice jobs and a filesystem audio cache. The Tifa voice layer should preserve that behavior while adding provider contracts for SaaS and multilingual deployments.
 
 ## Current Local Voice Runtime
 

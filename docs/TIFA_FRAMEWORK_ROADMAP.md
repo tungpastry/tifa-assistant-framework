@@ -1,6 +1,6 @@
 # Tifa Framework Roadmap
 
-The roadmap keeps TradeVibe useful as the reference local-first app while progressively extracting framework capabilities.
+The roadmap keeps Tifa useful as the reference local-first app while progressively extracting framework capabilities.
 
 ## Phase 1: Blueprint And Contracts
 
@@ -54,13 +54,13 @@ The roadmap keeps TradeVibe useful as the reference local-first app while progre
 
 ## Phase 8: UI Framework Readiness
 
-- Keep ChatTifa as the reference widget.
+- Keep TifaWidget as the reference widget.
 - Extract hooks and client helpers only when stable.
 - Add future UI affordances for provider/model badges, citations, tool traces, SQL previews, voice selector, quotas, and session folders.
 
 ## Repository Adoption Order
 
-1. TradeVibe: reference widget and local-first compatibility.
+1. Tifa: reference widget and local-first compatibility.
 2. Fx-Sentinel: PostgreSQL financial connector and Text-to-SQL reference.
 3. nexus-trade-radar: market dashboard and realtime signal assistant.
 4. ZenoraAI: 2D persona/assistant integration.

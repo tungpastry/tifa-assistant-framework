@@ -1,6 +1,6 @@
 # Local Production Services
 
-Tifa Assistant Framework keeps TradeVibe local mode runnable without PostgreSQL, Redis, object storage, auth, or SaaS services. For a single Ubuntu server, run the web app and local filesystem TTS worker as separate services.
+Tifa Assistant Framework keeps Tifa local mode runnable without PostgreSQL, Redis, object storage, auth, or SaaS services. For a single Ubuntu server, run the web app and local filesystem TTS worker as separate services.
 
 ## Systemd Templates
 

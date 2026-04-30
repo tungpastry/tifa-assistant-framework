@@ -8,12 +8,12 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
-const runtimeDir = process.env.TIFA_RUNTIME_DIR || process.env.TRADEVIBE_RUNTIME_DIR || path.join(rootDir, "runtime");
+const runtimeDir = process.env.TIFA_RUNTIME_DIR || path.join(rootDir, "runtime");
 const audioCacheDir = path.join(runtimeDir, "audio_cache");
 const ttsJobsDir = path.join(runtimeDir, "tts_jobs");
 const heartbeatPath = path.join(runtimeDir, "tts_worker_heartbeat.json");
 const intervalMs = parsePositiveInt(
-  process.env.TIFA_TTS_WORKER_INTERVAL_MS || process.env.TRADEVIBE_TTS_WORKER_INTERVAL_MS,
+  process.env.TIFA_TTS_WORKER_INTERVAL_MS,
   1000
 );
 const piperTimeoutMs = parsePositiveInt(process.env.PIPER_TIMEOUT_MS, 10000);
