@@ -15,6 +15,7 @@ export class VieNeuVoiceProvider implements VoiceProvider {
   supportsStreaming = false;
   supportsVoiceCloning = false;
   licenseClass: string;
+  metadata;
   private enabled: boolean;
   private baseUrl: string;
   private modelId: string;
@@ -26,6 +27,14 @@ export class VieNeuVoiceProvider implements VoiceProvider {
     this.modelId = options.modelId || process.env.TIFA_VIENEU_MODEL || "pnnbao-ump/VieNeu-TTS-q4-gguf";
     this.licenseClass = options.licenseClass || process.env.TIFA_VIENEU_LICENSE_CLASS || "apache-2.0";
     this.timeoutMs = options.timeoutMs ?? 30000;
+    this.metadata = {
+      provider: this.name,
+      displayName: "VieNeu facade",
+      locale: "vi-VN",
+      language: "Vietnamese",
+      licenseClass: this.licenseClass,
+      defaultVoiceId: "vieneu-default",
+    };
   }
 
   async synthesizeToFile(input: VoiceSynthesisInput) {
@@ -74,7 +83,7 @@ export class VieNeuVoiceProvider implements VoiceProvider {
 
   async health(): Promise<VoiceProviderHealth> {
     if (!this.enabled) {
-      return disabledVoiceHealth(this.name, "TIFA_VIENEU_ENABLED is not 1.");
+      return disabledVoiceHealth(this.name, "TIFA_VIENEU_ENABLED is not 1.", this.metadata);
     }
 
     try {
@@ -88,12 +97,14 @@ export class VieNeuVoiceProvider implements VoiceProvider {
           licenseClass: this.licenseClass,
           status: res.status,
         },
+        metadata: this.metadata,
       };
     } catch (error) {
       return {
         provider: this.name,
         status: "down",
         details: { baseUrl: this.baseUrl, error: error instanceof Error ? error.message : String(error) },
+        metadata: this.metadata,
       };
     }
   }
@@ -110,4 +121,3 @@ export class VieNeuVoiceProvider implements VoiceProvider {
     ];
   }
 }
-

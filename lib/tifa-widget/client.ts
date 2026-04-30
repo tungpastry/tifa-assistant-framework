@@ -5,6 +5,7 @@ export {
   createVoiceJob,
   getApiErrorMessage,
   getVoiceJob,
+  getVoiceProviders,
   playAudioUrl,
   playBase64Audio,
   playLegacyVoice,
@@ -19,4 +20,5 @@ export {
   type TifaStreamEvent,
   type VoiceJobResponse,
   type VoiceJobStatus,
+  type VoiceOption,
 } from "@/lib/client-api";

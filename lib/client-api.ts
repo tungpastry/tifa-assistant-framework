@@ -327,6 +327,37 @@ export interface VoiceJobResponse {
   error?: string | null;
 }
 
+export interface VoiceOption {
+  id: string;
+  name: string;
+  locale: string;
+  modelId: string;
+  licenseClass: string;
+  provider: string;
+  providerStatus: string;
+  enabled: boolean;
+}
+
+export async function getVoiceProviders(): Promise<{
+  providers: Array<Record<string, unknown>>;
+  voices: VoiceOption[];
+}> {
+  const res = await fetch("/api/voice/providers");
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiRequestError(
+      getApiErrorMessage(errorData, "Failed to get voice providers."),
+      { status: res.status, code: (errorData as ApiErrorEnvelope).error?.code }
+    );
+  }
+
+  return (await res.json()) as {
+    providers: Array<Record<string, unknown>>;
+    voices: VoiceOption[];
+  };
+}
+
 export async function createVoiceJob(
   text: string,
   options?: { voice?: string; format?: string; signal?: AbortSignal }

@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import fs from "fs/promises";
 import { jsonError } from "@/lib/api";
-import { readVoiceJob, getAudioCachePath } from "@/lib/tts-cache";
+import { isSafeVoiceJobId, readVoiceJob, getAudioCachePath } from "@/lib/tts-cache";
 
 export async function GET(
   req: Request,
@@ -12,8 +12,8 @@ export async function GET(
     const resolvedParams = await params;
     const { jobId } = resolvedParams;
 
-    if (!jobId) {
-      return jsonError("VALIDATION_ERROR", "Job ID is required.", 400);
+    if (!jobId || !isSafeVoiceJobId(jobId)) {
+      return jsonError("VALIDATION_ERROR", "Voice job not found.", 404);
     }
 
     const job = await readVoiceJob(jobId);

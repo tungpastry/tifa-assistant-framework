@@ -27,6 +27,16 @@ export interface VoiceProviderHealth {
   provider: VoiceProviderName | string;
   status: "ok" | "degraded" | "disabled" | "down";
   details?: Record<string, unknown>;
+  metadata?: VoiceProviderMetadata;
+}
+
+export interface VoiceProviderMetadata {
+  provider: VoiceProviderName | string;
+  displayName: string;
+  locale: string;
+  language: string;
+  licenseClass: VoiceLicenseClass;
+  defaultVoiceId: string;
 }
 
 export interface VoiceInfo {
@@ -45,9 +55,9 @@ export interface VoiceProviderCapabilities {
 
 export interface VoiceProvider extends VoiceProviderCapabilities {
   name: VoiceProviderName | string;
+  metadata: VoiceProviderMetadata;
   synthesizeToFile(input: VoiceSynthesisInput): Promise<VoiceSynthesisResult>;
   health(): Promise<VoiceProviderHealth>;
   getVoices(): Promise<VoiceInfo[]>;
   estimateLatency?(input: VoiceSynthesisInput): Promise<number>;
 }
-

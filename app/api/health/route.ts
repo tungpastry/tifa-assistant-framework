@@ -12,6 +12,7 @@ import { createPostgresFinancialConnector } from "@/lib/data-connectors/postgres
 import { createProviderGatewayProviders, getProviderFallbackOrder } from "@/lib/tifa-provider-gateway";
 import { getTtsWorkerStatus } from "@/lib/tts-worker-status";
 import { createLocalAssistantConfig } from "@/lib/framework/config";
+import { createDefaultVoiceProviderRegistry } from "@/lib/voice/provider-registry";
 
 type Status = "ok" | "degraded" | "disabled" | "down";
 
@@ -92,6 +93,26 @@ async function checkPiper(): Promise<Check> {
   }
 
   return { status, details, required: true };
+}
+
+async function checkVoiceProviders(): Promise<Check> {
+  const registry = createDefaultVoiceProviderRegistry();
+  const providers = await registry.health();
+  const defaultProvider = providers.find((provider) => provider.provider === "piper");
+  const status: Status = defaultProvider?.status === "ok"
+    ? "ok"
+    : providers.some((provider) => provider.status === "ok")
+    ? "degraded"
+    : "disabled";
+
+  return {
+    status,
+    details: {
+      default_provider: "piper",
+      providers,
+    },
+    required: false,
+  };
 }
 
 async function checkTtsWorker(): Promise<Check> {
@@ -212,6 +233,7 @@ export async function GET() {
     checkRuntime(),
     checkOllama(),
     checkPiper(),
+    checkVoiceProviders(),
     checkTtsWorker(),
     checkPostgresConnector(),
     checkRedis(),
@@ -220,7 +242,7 @@ export async function GET() {
     checkTextToSql(),
   ]);
 
-  const [runtime, ollama, piper, ttsWorker, postgres, redis, objectStorage, providerGateway, textToSql] = checks;
+  const [runtime, ollama, piper, voiceProviders, ttsWorker, postgres, redis, objectStorage, providerGateway, textToSql] = checks;
   const requiredChecks = checks.filter((check) => check.required);
 
   const overallStatus: Status = requiredChecks.some(c => c.status === "down")
@@ -240,6 +262,7 @@ export async function GET() {
         runtime,
         ollama,
         piper,
+        voice_providers: voiceProviders,
         tts_worker: ttsWorker,
         postgres,
         redis,

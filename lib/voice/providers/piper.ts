@@ -30,10 +30,19 @@ export class PiperVoiceProvider implements VoiceProvider {
   supportsStreaming = false;
   supportsVoiceCloning = false;
   licenseClass = "unknown";
+  metadata;
   private config: PiperVoiceRuntimeConfig;
 
   constructor(config: PiperVoiceRuntimeConfig = getPiperVoiceRuntimeConfig()) {
     this.config = config;
+    this.metadata = {
+      provider: this.name,
+      displayName: "Piper",
+      locale: "en-US",
+      language: "English",
+      licenseClass: this.licenseClass,
+      defaultVoiceId: this.config.voiceId,
+    };
   }
 
   async synthesizeToFile(input: VoiceSynthesisInput) {
@@ -104,6 +113,7 @@ export class PiperVoiceProvider implements VoiceProvider {
       provider: this.name,
       status,
       details,
+      metadata: this.metadata,
     };
   }
 
@@ -119,4 +129,3 @@ export class PiperVoiceProvider implements VoiceProvider {
     ];
   }
 }
-

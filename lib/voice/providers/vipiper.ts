@@ -20,14 +20,21 @@ export class ViPiperVoiceProvider extends PiperVoiceProvider {
 
   constructor(config = getViPiperVoiceRuntimeConfig()) {
     super(config);
+    this.metadata = {
+      provider: this.name,
+      displayName: "viPiper",
+      locale: "vi-VN",
+      language: "Vietnamese",
+      licenseClass: this.licenseClass,
+      defaultVoiceId: config.voiceId,
+    };
   }
 
   async health() {
     if (process.env.TIFA_VIPIPER_ENABLED !== "1") {
-      return disabledVoiceHealth(this.name, "TIFA_VIPIPER_ENABLED is not 1.");
+      return disabledVoiceHealth(this.name, "TIFA_VIPIPER_ENABLED is not 1.", this.metadata);
     }
 
     return super.health();
   }
 }
-

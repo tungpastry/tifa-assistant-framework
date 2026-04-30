@@ -76,7 +76,13 @@ export function getVoiceJobPath(jobId: string): string {
   return path.join(getTtsJobsDir(), `${jobId}.json`);
 }
 
+export function isSafeVoiceJobId(jobId: string): boolean {
+  return /^tts_[a-f0-9-]{36}$/i.test(jobId);
+}
+
 export async function readVoiceJob(jobId: string): Promise<VoiceJobRecord | null> {
+  if (!isSafeVoiceJobId(jobId)) return null;
+
   const jobPath = getVoiceJobPath(jobId);
   try {
     const data = await fs.readFile(jobPath, "utf-8");
@@ -90,6 +96,24 @@ export async function writeVoiceJob(job: VoiceJobRecord): Promise<void> {
   ensureRuntimeDirs();
   const jobPath = getVoiceJobPath(job.job_id);
   await fs.writeFile(jobPath, JSON.stringify(job, null, 2), "utf-8");
+}
+
+export async function retryFailedVoiceJob(jobId: string): Promise<VoiceJobRecord | null> {
+  const job = await readVoiceJob(jobId);
+  if (!job) return null;
+  if (job.status !== "failed") {
+    throw new Error(`Voice job ${jobId} is ${job.status}; only failed jobs can be retried.`);
+  }
+  if (!job.input || !normalizeTtsText(job.input.text)) {
+    throw new Error(`Voice job ${jobId} cannot be retried because original input is missing.`);
+  }
+
+  job.status = "queued";
+  job.error = null;
+  job.audio_url = null;
+  job.updated_at = new Date().toISOString();
+  await writeVoiceJob(job);
+  return job;
 }
 
 export async function createQueuedVoiceJob(

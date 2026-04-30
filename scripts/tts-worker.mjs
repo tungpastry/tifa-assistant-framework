@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import crypto from "crypto";
 import fs from "fs/promises";
+import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
@@ -8,16 +9,51 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+
+loadDotEnv(path.join(rootDir, ".env"));
+
 const runtimeDir = process.env.TIFA_RUNTIME_DIR || path.join(rootDir, "runtime");
 const audioCacheDir = path.join(runtimeDir, "audio_cache");
 const ttsJobsDir = path.join(runtimeDir, "tts_jobs");
 const heartbeatPath = path.join(runtimeDir, "tts_worker_heartbeat.json");
+const lockPath = path.join(runtimeDir, "tts_worker.lock");
 const intervalMs = parsePositiveInt(
   process.env.TIFA_TTS_WORKER_INTERVAL_MS,
   1000
 );
 const piperTimeoutMs = parsePositiveInt(process.env.PIPER_TIMEOUT_MS, 10000);
+const staleProcessingMs = parsePositiveInt(process.env.TIFA_TTS_STALE_PROCESSING_MS, 300000);
+const lockStaleMs = parsePositiveInt(process.env.TIFA_TTS_WORKER_LOCK_STALE_MS, 60000);
 const once = process.argv.includes("--once");
+
+function loadDotEnv(filePath) {
+  if (!existsSync(filePath)) return;
+
+  try {
+    const lines = readFileSync(filePath, "utf-8").split(/\r?\n/);
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const equalsIndex = line.indexOf("=");
+      if (equalsIndex <= 0) continue;
+
+      const key = line.slice(0, equalsIndex).trim();
+      if (!key || process.env[key] !== undefined) continue;
+
+      let value = line.slice(equalsIndex + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      process.env[key] = value;
+    }
+  } catch (err) {
+    console.warn("could not load .env for TTS worker", err);
+  }
+}
 
 function parsePositiveInt(value, fallback) {
   if (!value) return fallback;
@@ -68,6 +104,7 @@ function getAudioMetaPath(cacheKey) {
 }
 
 async function ensureRuntimeDirs() {
+  await fs.mkdir(runtimeDir, { recursive: true });
   await fs.mkdir(audioCacheDir, { recursive: true });
   await fs.mkdir(ttsJobsDir, { recursive: true });
 }
@@ -145,8 +182,68 @@ async function writeHeartbeat(processedLastTick, status = "ok") {
       audio_cache_dir: audioCacheDir,
       tts_jobs_dir: ttsJobsDir,
     });
+    const lock = await readWorkerLock();
+    if (!lock || lock.pid === process.pid) {
+      await writeWorkerLock(status);
+    }
   } catch (error) {
     console.warn("Failed to write TTS worker heartbeat:", error);
+  }
+}
+
+function isPidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    if (err && err.code === "EPERM") return true;
+    return false;
+  }
+}
+
+async function readWorkerLock() {
+  try {
+    return await readJson(lockPath);
+  } catch {
+    return null;
+  }
+}
+
+async function writeWorkerLock(status = "ok") {
+  await writeJson(lockPath, {
+    pid: process.pid,
+    updated_at: new Date().toISOString(),
+    status,
+    runtime_dir: runtimeDir,
+  });
+}
+
+async function acquireWorkerLock() {
+  await ensureRuntimeDirs();
+  const existing = await readWorkerLock();
+  if (existing) {
+    const ageMs = Date.now() - Date.parse(existing.updated_at || "");
+    const stale = !Number.isFinite(ageMs) || ageMs > lockStaleMs;
+    const alive = isPidAlive(Number(existing.pid));
+
+    if (alive && !stale && existing.pid !== process.pid) {
+      return false;
+    }
+
+    if (stale || !alive) {
+      console.warn(`reclaiming stale TTS worker lock from pid ${existing.pid || "unknown"}`);
+    }
+  }
+
+  await writeWorkerLock();
+  return true;
+}
+
+async function releaseWorkerLock() {
+  const existing = await readWorkerLock();
+  if (existing?.pid === process.pid) {
+    await fs.unlink(lockPath).catch(() => undefined);
   }
 }
 
@@ -251,7 +348,48 @@ async function processQueuedJob(job) {
   }
 }
 
+async function cleanupStaleProcessingJobs() {
+  await ensureRuntimeDirs();
+  const entries = await fs.readdir(ttsJobsDir, { withFileTypes: true });
+  let reclaimed = 0;
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+    const jobPath = path.join(ttsJobsDir, entry.name);
+    let job;
+    try {
+      job = await readJson(jobPath);
+    } catch {
+      continue;
+    }
+
+    if (job.status !== "processing") continue;
+
+    const updatedAt = Date.parse(job.updated_at || job.created_at || "");
+    const ageMs = Date.now() - updatedAt;
+    if (Number.isFinite(ageMs) && ageMs <= staleProcessingMs) continue;
+
+    if (job.input && normalizeText(job.input.text)) {
+      job.status = "queued";
+      job.audio_url = null;
+      job.error = `Requeued stale processing job after ${staleProcessingMs}ms.`;
+      await updateJob(job);
+      console.warn(`requeued stale processing job ${job.job_id}`);
+    } else {
+      await markFailed(job, new Error(`Stale processing job exceeded ${staleProcessingMs}ms and has no retryable input.`));
+      console.warn(`failed stale processing job ${job.job_id}`);
+    }
+    reclaimed += 1;
+  }
+
+  return reclaimed;
+}
+
 async function runOnce() {
+  const reclaimed = await cleanupStaleProcessingJobs();
+  if (reclaimed > 0) {
+    console.warn(`reclaimed ${reclaimed} stale processing job(s)`);
+  }
   const queuedJobs = await listQueuedJobs();
   for (const job of queuedJobs) {
     await processQueuedJob(job);
@@ -260,11 +398,39 @@ async function runOnce() {
   return queuedJobs.length;
 }
 
-do {
-  const processed = await runOnce();
+const releaseAndExit = async (code = 0) => {
+  await releaseWorkerLock();
+  process.exit(code);
+};
+
+process.on("SIGINT", () => void releaseAndExit(0));
+process.on("SIGTERM", () => void releaseAndExit(0));
+
+let lockAcquired = await acquireWorkerLock();
+if (!lockAcquired) {
+  console.warn("another TTS worker is already active");
   if (once) {
-    console.log(`processed ${processed} queued job(s)`);
-    break;
+    await writeHeartbeat(0, "locked");
+    console.log("processed 0 queued job(s)");
+    process.exit(0);
   }
-  await sleep(intervalMs);
-} while (true);
+
+  while (!lockAcquired) {
+    await writeHeartbeat(0, "locked");
+    await sleep(intervalMs);
+    lockAcquired = await acquireWorkerLock();
+  }
+}
+
+try {
+  do {
+    const processed = await runOnce();
+    if (once) {
+      console.log(`processed ${processed} queued job(s)`);
+      break;
+    }
+    await sleep(intervalMs);
+  } while (true);
+} finally {
+  await releaseWorkerLock();
+}

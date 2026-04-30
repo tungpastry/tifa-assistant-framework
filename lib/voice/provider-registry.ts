@@ -18,6 +18,30 @@ export class VoiceProviderRegistry {
   list() {
     return [...this.providers.values()];
   }
+
+  async health() {
+    return Promise.all(this.list().map((provider) => provider.health()));
+  }
+
+  async getAvailableVoices() {
+    const providers = this.list();
+    const health = await Promise.all(providers.map((provider) => provider.health()));
+    const voices = [];
+
+    for (let index = 0; index < providers.length; index++) {
+      const provider = providers[index];
+      const providerHealth = health[index];
+      const providerVoices = await provider.getVoices();
+      voices.push(...providerVoices.map((voice) => ({
+        ...voice,
+        provider: provider.name,
+        providerStatus: providerHealth.status,
+        enabled: providerHealth.status === "ok" || providerHealth.status === "degraded",
+      })));
+    }
+
+    return { health, voices };
+  }
 }
 
 export function createDefaultVoiceProviderRegistry() {
@@ -26,4 +50,3 @@ export function createDefaultVoiceProviderRegistry() {
     .register(new ViPiperVoiceProvider())
     .register(new VieNeuVoiceProvider());
 }
-

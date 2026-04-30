@@ -1,4 +1,4 @@
-import type { VoiceProviderHealth, VoiceSynthesisInput } from "../types";
+import type { VoiceProviderHealth, VoiceProviderMetadata, VoiceSynthesisInput } from "../types";
 
 export function normalizeVoiceText(text: string) {
   return text.trim();
@@ -14,11 +14,15 @@ export function assertVoiceInput(input: VoiceSynthesisInput) {
   }
 }
 
-export function disabledVoiceHealth(provider: string, reason: string): VoiceProviderHealth {
+export function disabledVoiceHealth(
+  provider: string,
+  reason: string,
+  metadata?: VoiceProviderMetadata
+): VoiceProviderHealth {
   return {
     provider,
     status: "disabled",
     details: { reason },
+    ...(metadata ? { metadata } : {}),
   };
 }
-
