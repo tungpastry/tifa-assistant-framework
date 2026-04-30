@@ -1,5 +1,7 @@
 # @tifa-assistant/core
 
+**Hey trader, how are you feeling today?**
+
 Core contracts and framework metadata for Tifa Assistant Framework.
 
 This is the first npm-publishable pilot package. The source of truth remains

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Activity, Bot, Database, HeartPulse, Mic2, ShieldCheck } from "lucide-react";
 import TifaWidget from "@/components/TifaWidget";
 
@@ -50,17 +51,33 @@ export default function Home() {
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-10">
         <div className="flex flex-1 flex-col justify-center gap-10">
-          <div className="max-w-3xl">
-            <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-pink-300">
-              Local-first assistant framework
-            </p>
-            <h1 className="text-4xl font-semibold tracking-normal text-white sm:text-6xl">
-              Tifa Assistant Framework
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 sm:text-lg">
-              A reusable foundation for streaming AI assistants, provider routing,
-              voice jobs, guarded data connectors, and SaaS-ready runtime contracts.
-            </p>
+          <div className="grid items-center gap-8 lg:grid-cols-[220px_1fr]">
+            <div className="relative h-44 w-44 overflow-hidden rounded-full border border-pink-300/30 bg-black shadow-[0_0_50px_rgba(236,72,153,0.18)] sm:h-52 sm:w-52">
+              <Image
+                src="/tifa-assistant-logo.png"
+                alt="Tifa Assistant Framework logo"
+                fill
+                priority
+                sizes="(min-width: 1024px) 208px, 176px"
+                className="object-cover"
+              />
+            </div>
+
+            <div className="max-w-3xl">
+              <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-pink-300">
+                Local-first assistant framework
+              </p>
+              <h1 className="text-4xl font-semibold tracking-normal text-white sm:text-6xl">
+                Tifa Assistant Framework
+              </h1>
+              <p className="mt-4 text-lg font-medium text-cyan-200 sm:text-xl">
+                Hey trader, how are you feeling today?
+              </p>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 sm:text-lg">
+                A reusable foundation for streaming AI assistants, provider routing,
+                voice jobs, guarded data connectors, and SaaS-ready runtime contracts.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
