@@ -79,14 +79,47 @@ assert_status "POST /api/tifa/stream (Empty Message)" "400" -X POST -H "Content-
 assert_status "POST /api/tifa/stream (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"message\":\"${LONG_TIFA_TEXT}\"}" "${BASE_URL}/api/tifa/stream"
 echo ""
 
+# --- Experimental Data Query API Validation ---
+echo "4. Experimental Data Query API Validation"
+assert_status "POST /api/data/query-plan (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"question":"hello"' "${BASE_URL}/api/data/query-plan"
+assert_status "POST /api/data/query-plan (Empty Question)" "400" -X POST -H "Content-Type: application/json" -d '{"question":""}' "${BASE_URL}/api/data/query-plan"
+assert_status "POST /api/data/query-plan (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"question\":\"${LONG_TIFA_TEXT}\"}" "${BASE_URL}/api/data/query-plan"
+
+echo -n "Checking POST /api/data/query-plan (Normal Question)..."
+data_plan_response=$(mktemp)
+data_plan_status=$(curl -s -o "$data_plan_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show AAPL price and volume","maxRows":25}' "${BASE_URL}/api/data/query-plan")
+if [[ "$data_plan_status" == "200" ]] && grep -q '"experimental":true' "$data_plan_response"; then
+  echo " ✅ OK (200)"
+else
+  echo " ❌ FAIL (Expected 200 experimental JSON, got $data_plan_status)"
+  cat "$data_plan_response"
+  rm -f "$data_plan_response"
+  exit 1
+fi
+rm -f "$data_plan_response"
+
+echo -n "Checking POST /api/data/query (Disabled Local Mode)..."
+data_query_response=$(mktemp)
+data_query_status=$(curl -s -o "$data_query_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"question":"Show AAPL price and volume","maxRows":25,"execute":true}' "${BASE_URL}/api/data/query")
+if [[ "$data_query_status" == "200" ]] && grep -q '"data":null' "$data_query_response"; then
+  echo " ✅ OK (200)"
+else
+  echo " ❌ FAIL (Expected safe disabled response, got $data_query_status)"
+  cat "$data_query_response"
+  rm -f "$data_query_response"
+  exit 1
+fi
+rm -f "$data_query_response"
+echo ""
+
 # --- Voice API Validation ---
-echo "4. Voice API Validation"
+echo "5. Voice API Validation"
 assert_status "GET /api/voice (Empty Text)" "400" "${BASE_URL}/api/voice?text="
 assert_status "GET /api/voice (Too Long)" "413" "${BASE_URL}/api/voice?text=${LONG_TEXT}"
 echo ""
 
 # --- Voice Job API Validation ---
-echo "5. Voice Job API Validation"
+echo "6. Voice Job API Validation"
 assert_status "POST /api/voice/jobs (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"text":"hello"' "${BASE_URL}/api/voice/jobs"
 assert_status "POST /api/voice/jobs (Empty Text)" "400" -X POST -H "Content-Type: application/json" -d '{"text":""}' "${BASE_URL}/api/voice/jobs"
 assert_status "POST /api/voice/jobs (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${LONG_TEXT}\"}" "${BASE_URL}/api/voice/jobs"
@@ -95,7 +128,7 @@ assert_status "GET /api/voice/jobs/nonexistent_job/audio" "404" "${BASE_URL}/api
 echo ""
 
 # --- Voice Job Lifecycle Without Live Piper ---
-echo "6. Voice Job Lifecycle"
+echo "7. Voice Job Lifecycle"
 echo -n "Checking POST /api/voice/jobs (Queued or Cached)..."
 voice_job_response=$(mktemp)
 voice_job_text="Voice job validation smoke $(date +%s)"
@@ -121,7 +154,7 @@ fi
 echo ""
 
 # --- Chat History API Validation ---
-echo "7. Chat History API Validation"
+echo "8. Chat History API Validation"
 assert_status "POST /api/chat/sessions (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"mood":"focused"' "${BASE_URL}/api/chat/sessions"
 assert_status "GET /api/chat/sessions invalid id" "400" "${BASE_URL}/api/chat/sessions/not_a_session"
 assert_status "GET /api/chat/sessions nonexistent" "404" "${BASE_URL}/api/chat/sessions/session_00000000-0000-4000-8000-000000000000"
@@ -146,7 +179,7 @@ echo ""
 
 
 if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
-  echo "8. Live API Checks (RUN_LIVE_SMOKE=1)"
+  echo "9. Live API Checks (RUN_LIVE_SMOKE=1)"
   assert_status "POST /api/tifa (Live)" "200" -X POST -H "Content-Type: application/json" -d '{"message":"Hello Tifa"}' "${BASE_URL}/api/tifa"
   assert_status "GET /api/voice (Live)" "200" "${BASE_URL}/api/voice?text=Hello"
 
@@ -244,12 +277,12 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   rm -f "$audio_file"
   echo ""
 else
-    echo "8. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
+    echo "9. Skipping Live API Checks (set RUN_LIVE_SMOKE=1 to run)"
 fi
 
 if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   echo ""
-  echo "9. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
+  echo "10. Rate Limit Checks (RUN_RATE_LIMIT_SMOKE=1)"
   echo "   (Assumes app running with low limits, e.g., *_RATE_LIMIT_MAX=1)"
 
   # Test Tifa rate limit
@@ -279,7 +312,7 @@ if [[ "${RUN_RATE_LIMIT_SMOKE:-0}" == "1" ]]; then
   fi
 else
     echo ""
-    echo "9. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
+    echo "10. Skipping Rate Limit Checks (set RUN_RATE_LIMIT_SMOKE=1 to run)"
 fi
 
 
