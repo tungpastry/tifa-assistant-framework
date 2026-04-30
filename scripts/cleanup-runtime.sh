@@ -2,12 +2,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RUNTIME_DIR="${TRADEVIBE_RUNTIME_DIR:-$ROOT_DIR/runtime}"
+RUNTIME_DIR="${TIFA_RUNTIME_DIR:-${TRADEVIBE_RUNTIME_DIR:-$ROOT_DIR/runtime}}"
 
-DRY_RUN="${TRADEVIBE_CLEANUP_DRY_RUN:-1}"
-AUDIO_CACHE_RETENTION_DAYS="${TRADEVIBE_AUDIO_CACHE_RETENTION_DAYS:-30}"
-TTS_JOB_RETENTION_DAYS="${TRADEVIBE_TTS_JOB_RETENTION_DAYS:-7}"
-LOG_RETENTION_DAYS="${TRADEVIBE_LOG_RETENTION_DAYS:-30}"
+DRY_RUN="${TIFA_CLEANUP_DRY_RUN:-${TRADEVIBE_CLEANUP_DRY_RUN:-1}}"
+AUDIO_CACHE_RETENTION_DAYS="${TIFA_AUDIO_CACHE_RETENTION_DAYS:-${TRADEVIBE_AUDIO_CACHE_RETENTION_DAYS:-30}}"
+TTS_JOB_RETENTION_DAYS="${TIFA_TTS_JOB_RETENTION_DAYS:-${TRADEVIBE_TTS_JOB_RETENTION_DAYS:-7}}"
+LOG_RETENTION_DAYS="${TIFA_LOG_RETENTION_DAYS:-${TRADEVIBE_LOG_RETENTION_DAYS:-30}}"
 
 is_non_negative_integer() {
   [[ "$1" =~ ^[0-9]+$ ]]
@@ -36,14 +36,14 @@ cleanup_dir() {
   fi
 
   if [[ "$DRY_RUN" != "0" ]]; then
-    echo "Invalid TRADEVIBE_CLEANUP_DRY_RUN=${DRY_RUN}; expected 1 or 0" >&2
+    echo "Invalid TIFA_CLEANUP_DRY_RUN=${DRY_RUN}; expected 1 or 0" >&2
     exit 1
   fi
 
   find "$target_dir" -type f -mtime +"$retention_days" -print -delete
 }
 
-echo "TradeVibe runtime cleanup"
+echo "Tifa runtime cleanup"
 echo "Runtime dir: ${RUNTIME_DIR}"
 echo "Dry run: ${DRY_RUN}"
 

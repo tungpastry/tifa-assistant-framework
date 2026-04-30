@@ -1,170 +1,113 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import ChatTifa from "@/components/ChatTifa";
-import { b64ToBlob } from "@/lib/client-api";
+import { Activity, Bot, Database, HeartPulse, Mic2, ShieldCheck } from "lucide-react";
+import TifaWidget from "@/components/TifaWidget";
 
-interface PlaylistItem {
-  name?: string;
-  title?: string;
-  url: string;
-}
+const apiEndpoints = [
+  "POST /api/tifa",
+  "POST /api/tifa/stream",
+  "POST /api/voice/jobs",
+  "GET /api/voice/jobs/{jobId}",
+  "GET /api/voice/jobs/{jobId}/audio",
+  "GET /api/health",
+];
+
+const frameworkModules = [
+  {
+    name: "tifa-core",
+    description: "Shared contracts, tenant context, events, usage, and error envelopes.",
+    icon: ShieldCheck,
+  },
+  {
+    name: "tifa-runtime",
+    description: "Local-first sessions, runtime directories, TTS worker status, and future persistence adapters.",
+    icon: Activity,
+  },
+  {
+    name: "tifa-provider-gateway",
+    description: "LLM provider interface, Ollama-compatible adapter, router policy, and cloud provider scaffolds.",
+    icon: Bot,
+  },
+  {
+    name: "tifa-voice",
+    description: "Voice jobs, Piper-compatible providers, VieNeu facade scaffold, and object storage contracts.",
+    icon: Mic2,
+  },
+  {
+    name: "tifa-data-connectors",
+    description: "PostgreSQL financial connector, safety checks, and guarded Text-to-SQL planning.",
+    icon: Database,
+  },
+  {
+    name: "tifa-widget",
+    description: "Typed widget boundary for the floating Tifa assistant and future React package extraction.",
+    icon: HeartPulse,
+  },
+];
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [mood, setMood] = useState("");
-  const [vibe, setVibe] = useState("");
-  const [spotify, setSpotify] = useState<PlaylistItem[]>([]);
-  const [youtube, setYoutube] = useState<PlaylistItem[]>([]);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let url: string | null = null;
-
-    async function fetchToday() {
-      try {
-        const res = await fetch("/api/today");
-        const data = await res.json();
-        console.log("🎯 Today data:", data);
-
-        setMood(data.mood || "focused");
-        setVibe(
-          data.vibe ||
-            "Stay calm and trade with confidence 💫"
-        );
-        setSpotify(data.spotify || []);
-        setYoutube(data.youtube || []);
-        
-        if (data.audio) {
-          const audioBlob = b64ToBlob(data.audio, "audio/wav");
-          url = URL.createObjectURL(audioBlob);
-          setAudioUrl(url);
-
-          const player = new Audio(url);
-          player.play().catch((err) =>
-            console.warn("⚠️ Auto-play blocked:", err)
-          );
-        }
-
-      } catch (err) {
-        console.error("❌ Failed to fetch /api/today:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    fetchToday();
-    
-    return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, []);
-
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-black text-gray-100 px-4 overflow-hidden">
-      <motion.h1
-        className="text-5xl font-extrabold mb-6 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent text-center"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        TradeVibe 🎧
-      </motion.h1>
-
-      {loading ? (
-        <p className="text-gray-400 animate-pulse text-center">
-          Loading today’s vibe...
-        </p>
-      ) : (
-        <>
-          {/* Mood + Vibe */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-pink-400 mb-2">
-              Mood Today:{" "}
-              {mood.charAt(0).toUpperCase() + mood.slice(1)}{" "}
-              {mood === "happy" ? "💖" : mood === "focused" ? "🧠" : "🎵"}
-            </h2>
-
-            <motion.p
-              key={vibe}
-              className="text-lg italic text-gray-200 leading-relaxed max-w-2xl mx-auto whitespace-pre-line"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              {vibe}
-            </motion.p>
+    <main className="min-h-screen bg-neutral-950 text-neutral-100">
+      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-10">
+        <div className="flex flex-1 flex-col justify-center gap-10">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-pink-300">
+              Local-first assistant framework
+            </p>
+            <h1 className="text-4xl font-semibold tracking-normal text-white sm:text-6xl">
+              Tifa Assistant Framework
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 sm:text-lg">
+              A reusable foundation for streaming AI assistants, provider routing,
+              voice jobs, guarded data connectors, and SaaS-ready runtime contracts.
+            </p>
           </div>
 
-          {audioUrl && (
-            <audio
-              controls
-              autoPlay
-              className="my-6 w-80"
-              src={audioUrl}
-            >
-              Your browser does not support audio playback.
-            </audio>
-          )}
-
-          {/* Spotify */}
-          {spotify.length > 0 && (
-            <div className="w-full max-w-2xl mt-6">
-              <h3 className="text-xl font-semibold text-green-400 mb-3 text-center">
-                Spotify Playlist 🎵
-              </h3>
-              {spotify.slice(0, 1).map((s) => {
-                const id = s.url.split("/playlist/")[1];
-                return (
-                  <iframe
-                    key={id}
-                    src={`https://open.spotify.com/embed/playlist/${id}`}
-                    width="100%"
-                    height="380"
-                    allow="encrypted-media"
-                    className="rounded-xl shadow-lg"
-                  ></iframe>
-                );
-              })}
-            </div>
-          )}
-
-          {/* YouTube */}
-          {youtube.length > 0 && (
-            <div className="w-full max-w-2xl mt-10">
-              <h3 className="text-xl font-semibold text-red-400 mb-3 text-center">
-                YouTube Playlist 📺
-              </h3>
-              {youtube.slice(0, 1).map((y) => {
-                const vid = new URL(y.url).searchParams.get("v");
-                return (
-                  <div key={vid} className="aspect-video mb-4">
-                    <iframe
-                      width="100%"
-                      height="315"
-                      src={`https://www.youtube.com/embed/${vid}`}
-                      title={y.title}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="rounded-xl shadow-lg"
-                    ></iframe>
+          <div className="grid gap-4 md:grid-cols-3">
+            {frameworkModules.map((module) => {
+              const Icon = module.icon;
+              return (
+                <article
+                  key={module.name}
+                  className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-4"
+                >
+                  <div className="mb-3 flex items-center gap-2 text-pink-200">
+                    <Icon size={18} aria-hidden="true" />
+                    <h2 className="text-sm font-semibold">{module.name}</h2>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <p className="text-sm leading-6 text-neutral-400">{module.description}</p>
+                </article>
+              );
+            })}
+          </div>
 
-          <p className="text-sm mt-10 text-gray-500 text-center">
-            Powered by Qwen3 🧠 + Gemma3 🎵 + Piper 🎙️
-          </p>
+          <div className="grid gap-4 lg:grid-cols-[1fr_0.75fr]">
+            <section className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-5">
+              <h2 className="text-base font-semibold text-white">Stable Local APIs</h2>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {apiEndpoints.map((endpoint) => (
+                  <code
+                    key={endpoint}
+                    className="rounded-md border border-neutral-800 bg-black/40 px-3 py-2 text-sm text-neutral-300"
+                  >
+                    {endpoint}
+                  </code>
+                ))}
+              </div>
+            </section>
 
-          {/* 💬 Chatbot Tifa — synced mood */}
-          <ChatTifa mood={mood} />
-        </>
-      )}
+            <section className="rounded-lg border border-neutral-800 bg-neutral-900/70 p-5">
+              <h2 className="text-base font-semibold text-white">Local Mode</h2>
+              <p className="mt-4 text-sm leading-6 text-neutral-400">
+                Runs without PostgreSQL, Redis, object storage, auth, or SaaS services.
+                Optional SaaS adapters stay disabled until explicit environment flags are set.
+              </p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <TifaWidget mood="focused" />
     </main>
   );
 }

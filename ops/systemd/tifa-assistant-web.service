@@ -10,8 +10,8 @@ WorkingDirectory=${TIFA_REPO_ROOT}
 Environment=NODE_ENV=production
 Environment=HOST=0.0.0.0
 Environment=PORT=3100
-Environment=TRADEVIBE_RUNTIME_DIR=${TIFA_REPO_ROOT}/runtime
-Environment=TRADEVIBE_TIMEZONE=Asia/Ho_Chi_Minh
+Environment=TIFA_RUNTIME_DIR=${TIFA_REPO_ROOT}/runtime
+Environment=TIFA_TIMEZONE=Asia/Ho_Chi_Minh
 EnvironmentFile=-${TIFA_REPO_ROOT}/.env
 ExecStart=/bin/bash ${TIFA_REPO_ROOT}/start.sh
 Restart=always
@@ -19,4 +19,3 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-

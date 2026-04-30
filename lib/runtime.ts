@@ -1,17 +1,10 @@
 import fs from "fs";
 import path from "path";
 
-export interface LatestManifest {
-  date: string;
-  mood: string;
-  musicPath?: string;
-  vibePath?: string;
-  audioPath?: string;
-  updatedAt?: string;
-}
-
-export const TRADEVIBE_TIMEZONE =
-  process.env.TRADEVIBE_TIMEZONE || "Asia/Ho_Chi_Minh";
+export const TIFA_TIMEZONE =
+  process.env.TIFA_TIMEZONE ||
+  process.env.TRADEVIBE_TIMEZONE ||
+  "Asia/Ho_Chi_Minh";
 
 export function getRepoRoot() {
   return process.cwd();
@@ -26,11 +19,11 @@ export function resolveFromRepoRoot(targetPath: string) {
 }
 
 export function getRuntimeDir() {
-  return resolveFromRepoRoot(process.env.TRADEVIBE_RUNTIME_DIR || "runtime");
-}
-
-export function getDailyVibesDir() {
-  return path.join(getRuntimeDir(), "daily_vibes");
+  return resolveFromRepoRoot(
+    process.env.TIFA_RUNTIME_DIR ||
+      process.env.TRADEVIBE_RUNTIME_DIR ||
+      "runtime"
+  );
 }
 
 export function getRuntimeLogsDir() {
@@ -53,14 +46,9 @@ export function getChatSessionsDir() {
   return path.join(getRuntimeDir(), "chat_sessions");
 }
 
-export function getLatestManifestPath() {
-  return path.join(getRuntimeDir(), "latest.json");
-}
-
 export function ensureRuntimeDirs() {
   for (const dir of [
     getRuntimeDir(),
-    getDailyVibesDir(),
     getRuntimeLogsDir(),
     getAudioCacheDir(),
     getTtsJobsDir(),
@@ -72,7 +60,7 @@ export function ensureRuntimeDirs() {
   }
 }
 
-export function getCurrentDate(timeZone = TRADEVIBE_TIMEZONE) {
+export function getCurrentDate(timeZone = TIFA_TIMEZONE) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -119,21 +107,6 @@ export function listFilesByMtimeDesc(
 
 export function readJsonFile<T>(filePath: string) {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
-}
-
-export function readLatestManifest() {
-  const manifestPath = getLatestManifestPath();
-
-  if (!fs.existsSync(manifestPath)) {
-    return null;
-  }
-
-  try {
-    return readJsonFile<LatestManifest>(manifestPath);
-  } catch (error) {
-    console.warn("Failed to read runtime/latest.json:", error);
-    return null;
-  }
 }
 
 export function encodeAudioFile(filePath: string | null | undefined) {

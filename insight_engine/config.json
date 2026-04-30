@@ -1,9 +1,0 @@
-{
-  "llm_api_url": "http://192.168.1.15:11434/api/generate",
-  "model": "qwen3:4b-instruct-2507-q4_K_M",
-  "piper_model": "/home/nexus/piper/voices/en_US-libritts-high.onnx",
-  "output_dir": "/home/nexus/projects/tradevibe-org/insight_engine/output/daily_vibes",
-  "log_file": "/home/nexus/projects/tradevibe-org/insight_engine/logs/tradevibe_insight.log",
-  "vibe_prompt": "Generate a fresh motivational trading quote (1–2 lines) with emoji. Tone: calm, confident, authentic. Avoid repetition.",
-  "timezone": "Asia/Ho_Chi_Minh"
-}

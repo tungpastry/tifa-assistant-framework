@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-${TRADEVIBE_BASE_URL:-http://127.0.0.1:3100}}"
+BASE_URL="${BASE_URL:-${TIFA_BASE_URL:-${TRADEVIBE_BASE_URL:-http://127.0.0.1:3100}}}"
 MAX_VOICE_CHARS=501
 MAX_TIFA_CHARS=2001
 LONG_TEXT=$(head -c ${MAX_VOICE_CHARS} < /dev/zero | tr '\0' 'a')
@@ -179,15 +179,15 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
 
   if [[ "$job_status" == "queued" || "$job_status" == "processing" ]]; then
     echo -n "Checking TTS worker once..."
-    if npm run -s tts:worker:once >/tmp/tradevibe-tts-worker-smoke.log 2>&1; then
+    if npm run -s tts:worker:once >/tmp/tifa-tts-worker-smoke.log 2>&1; then
       echo " ✅ OK"
     else
       echo " ❌ FAIL"
-      cat /tmp/tradevibe-tts-worker-smoke.log
-      rm -f /tmp/tradevibe-tts-worker-smoke.log
+      cat /tmp/tifa-tts-worker-smoke.log
+      rm -f /tmp/tifa-tts-worker-smoke.log
       exit 1
     fi
-    rm -f /tmp/tradevibe-tts-worker-smoke.log
+    rm -f /tmp/tifa-tts-worker-smoke.log
   fi
 
   echo -n "Checking voice job ready status..."
@@ -217,7 +217,7 @@ if [[ "${RUN_LIVE_SMOKE:-0}" == "1" ]]; then
   fi
 
   echo -n "Checking GET /api/voice/jobs/{jobId}/audio (Live)..."
-  audio_file="/tmp/tradevibe-voice-job-smoke.wav"
+  audio_file="/tmp/tifa-voice-job-smoke.wav"
   audio_status=$(curl -s -o "$audio_file" -w "%{http_code}" "${BASE_URL}/api/voice/jobs/${job_id}/audio")
   if [[ "$audio_status" != "200" ]]; then
     echo " ❌ FAIL (Expected 200, got $audio_status)"

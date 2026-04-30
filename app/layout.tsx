@@ -14,11 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ SEO metadata
 export const metadata: Metadata = {
-  title: "TradeVibe 🎧 – Daily Vibe for Traders",
+  title: "Tifa Assistant Framework",
   description:
-    "AI-powered daily motivation and chill playlist for traders. Powered by Qwen3 + Gemma3.",
+    "Local-first assistant framework for streaming chat, voice jobs, provider routing, data connectors, and SaaS-ready scaffolds.",
 };
 
 // ✅ Root Layout

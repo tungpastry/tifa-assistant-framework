@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import {
   getRuntimeDir,
-  getDailyVibesDir,
   getRuntimeLogsDir,
   getAudioCacheDir,
   getTtsJobsDir,
@@ -27,7 +26,6 @@ async function checkRuntime(): Promise<Check> {
   try {
     const dirs = [
       getRuntimeDir(),
-      getDailyVibesDir(),
       getRuntimeLogsDir(),
       getAudioCacheDir(),
       getTtsJobsDir(),
@@ -213,7 +211,7 @@ export async function GET() {
   return NextResponse.json(
     {
       status: overallStatus,
-      service: "tradevibe",
+      service: "tifa-assistant-framework",
       timestamp: new Date().toISOString(),
       checks: {
         runtime,

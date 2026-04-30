@@ -8,5 +8,4 @@ Data connector boundary for safe financial data access:
 - financial semantic views
 - guarded Text-to-SQL planning scaffold
 
-All connector execution remains opt-in. Local TradeVibe mode does not require a database.
-
+All connector execution remains opt-in. Local Tifa mode does not require a database.

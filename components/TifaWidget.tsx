@@ -34,7 +34,7 @@ function shouldFallback(err: unknown): boolean {
   return true;
 }
 
-export default function ChatTifa({ mood }: { mood: string }) {
+export default function TifaWidget({ mood }: { mood: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -56,7 +56,7 @@ export default function ChatTifa({ mood }: { mood: string }) {
     if (!chatSessionPromiseRef.current) {
       chatSessionPromiseRef.current = createChatSession({
         mood: mood.toLowerCase(),
-        title: "ChatTifa",
+        title: "TifaWidget",
       })
         .then((session) => {
           chatSessionIdRef.current = session.id;

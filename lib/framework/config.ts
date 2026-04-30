@@ -33,7 +33,7 @@ export function getFrameworkRuntimeConfig(): FrameworkRuntimeConfig {
   return {
     mode,
     defaultTenantId: process.env.TIFA_DEFAULT_TENANT_ID || "local",
-    defaultAssistantId: process.env.TIFA_DEFAULT_ASSISTANT_ID || "tradevibe-chat-tifa",
+    defaultAssistantId: process.env.TIFA_DEFAULT_ASSISTANT_ID || "tifa-assistant",
     localFirst: mode === "local" || parseBooleanFlag(process.env.TIFA_LOCAL_FIRST, true),
     textToSqlEnabled: parseBooleanFlag(process.env.TIFA_TEXT_TO_SQL_ENABLED),
     postgresEnabled: parseBooleanFlag(process.env.TIFA_PG_ENABLED),
@@ -87,7 +87,7 @@ export function createLocalAssistantConfig(): AssistantConfig {
     id: runtime.defaultAssistantId,
     tenantId: runtime.defaultTenantId,
     slug: "chat-tifa",
-    name: "ChatTifa",
+    name: "Tifa Assistant",
     locale: process.env.TIFA_DEFAULT_LOCALE || "en-US",
     defaultMood: "focused",
     modelPolicy: createDefaultModelPolicy(),

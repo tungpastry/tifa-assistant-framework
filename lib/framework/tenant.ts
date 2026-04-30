@@ -14,7 +14,7 @@ export function createLocalTenant(now: ISODateTimeString = new Date().toISOStrin
   return {
     id: LOCAL_TENANT_ID,
     slug: "local",
-    name: "Local TradeVibe",
+    name: "Local Tifa",
     planCode: "local",
     status: "active",
     createdAt: now,
@@ -41,4 +41,3 @@ export function requireTenantId(context: Pick<TenantContext, "tenantId">): strin
 
   return context.tenantId;
 }
-

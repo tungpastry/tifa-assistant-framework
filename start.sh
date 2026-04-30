@@ -8,7 +8,7 @@ PORT="${PORT:-3100}"
 "$ROOT_DIR/scripts/prepare-runtime.sh"
 
 if [[ ! -x "$ROOT_DIR/node_modules/.bin/next" ]]; then
-  echo "Missing Next.js binary. Run npm install before starting TradeVibe." >&2
+  echo "Missing Next.js binary. Run npm install before starting Tifa Assistant Framework." >&2
   exit 1
 fi
 

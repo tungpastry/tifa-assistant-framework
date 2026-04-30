@@ -7,5 +7,4 @@ Voice boundary for local-first TTS and future SaaS voice assets:
 - cache/job helpers
 - local worker heartbeat/status
 
-TradeVibe remains Piper-first by default. viPiper and VieNeu are opt-in scaffolds.
-
+Tifa remains Piper-first by default. viPiper and VieNeu are opt-in scaffolds.
