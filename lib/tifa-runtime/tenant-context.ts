@@ -5,6 +5,14 @@ export function isSaasModeEnabled() {
   return process.env.TIFA_SAAS_MODE === "1";
 }
 
+export function createTenantContext(headers?: Headers): TenantContext {
+  if (headers) {
+    return resolveTenantContextFromHeaders(headers);
+  }
+
+  return createLocalTenantContext();
+}
+
 export function resolveTenantContextFromHeaders(headers: Headers): TenantContext {
   if (!isSaasModeEnabled()) {
     return createLocalTenantContext();
@@ -26,4 +34,3 @@ export function resolveTenantContextFromHeaders(headers: Headers): TenantContext
     mode: "saas",
   };
 }
-

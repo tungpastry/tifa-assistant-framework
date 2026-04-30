@@ -1,5 +1,6 @@
 import type { AssistantConfig, ModelPolicy, ToolPolicy, UiPolicy, VoicePolicy } from "./types";
-import type { LlmRouterPolicy } from "@/lib/llm/types";
+
+type LlmRouterPolicy = ModelPolicy["routingMode"];
 
 export type TifaRuntimeMode = "local" | "hybrid" | "saas";
 

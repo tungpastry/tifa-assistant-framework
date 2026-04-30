@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "mode": "dry-run",
+  "packages": [
+    {
+      "name": "@tifa-assistant/core",
+      "source": "lib/tifa-core",
+      "publicEntry": "lib/tifa-core/index.ts",
+      "status": "pilot-workspace",
+      "futurePackageDir": "packages/core",
+      "packageDir": "packages/core",
+      "packageEntry": "packages/core/src/index.ts",
+      "browserSafe": true,
+      "serverOnly": false,
+      "dependsOn": []
+    }
+  ]
+}

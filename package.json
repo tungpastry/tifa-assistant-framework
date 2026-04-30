@@ -2,6 +2,9 @@
   "name": "tifa-assistant-framework",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/core"
+  ],
   "engines": {
     "node": ">=18.18.0"
   },
@@ -10,7 +13,12 @@
     "build": "next build",
     "start": "bash ./start.sh",
     "lint": "eslint app components lib --ext .ts,.tsx",
-    "check": "npm run lint && npm run build",
+    "check": "npm run lint && npm run check:exports && npm run check:package-layout && npm run check:packages && npm run check:core-package && npm run build",
+    "check:exports": "node scripts/check-public-exports.mjs",
+    "check:package-layout": "node scripts/check-package-layout.mjs",
+    "check:packages": "npm run check -w @tifa-assistant/core",
+    "build:packages": "npm run build -w @tifa-assistant/core",
+    "check:core-package": "node scripts/check-core-package-pilot.mjs",
     "cleanup:runtime": "bash scripts/cleanup-runtime.sh",
     "smoke:api": "bash scripts/smoke-api.sh",
     "tts:worker": "node scripts/tts-worker.mjs",

@@ -8,6 +8,8 @@ import {
   parsePositiveInt,
 } from "@/lib/rate-limit";
 
+export { createTenantContext } from "./tifa-runtime/tenant-context";
+
 export const MAX_TIFA_MESSAGE_LENGTH = 2000;
 export const DEFAULT_TIFA_MODEL = "gemma3:1b";
 export const DEFAULT_TIFA_PROMPT =

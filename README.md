@@ -142,8 +142,13 @@ npm run tts:worker:once
 
 ```bash
 git diff --check
+npm run check:exports
+npm run check:package-layout
+npm run check:packages
+npm run check:core-package
 npm run lint
 npm run build
+npm run check
 npm run smoke:api
 node --check scripts/tts-worker.mjs
 npm run tts:worker:once
@@ -167,6 +172,15 @@ RUN_LIVE_SMOKE=1 npm run smoke:api
 See [Module Boundaries](docs/MODULE_BOUNDARIES.md),
 [P5 SaaS Extraction Plan](docs/P5_SAAS_EXTRACTION_PLAN.md), and
 [Consuming Repositories Migration Guide](docs/CONSUMING_REPOS_MIGRATION.md).
+
+## Workspace Pilot
+
+The first npm-publishable pilot package is `@tifa-assistant/core`.
+The source of truth remains `lib/tifa-core`; `packages/core` re-exports that
+boundary for package validation and npm publishing.
+
+See [P8 Core Workspace Pilot](docs/P8_CORE_WORKSPACE_PILOT.md) and
+[P9 Core Package Publish](docs/P9_CORE_PACKAGE_PUBLISH.md).
 
 ## SaaS Mode
 

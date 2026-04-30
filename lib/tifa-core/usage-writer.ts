@@ -1,4 +1,4 @@
-import type { UsageEvent } from "@/lib/framework/types";
+import type { UsageEvent } from "../framework/types";
 
 export interface UsageEventWriter {
   write(event: UsageEvent): Promise<void>;
@@ -9,4 +9,3 @@ export class NoopUsageEventWriter implements UsageEventWriter {
     void event;
   }
 }
-
