@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-This project follows a practical changelog format for a local-first, self-hosted AI trader companion application.
+This project follows a practical changelog format for Tifa Assistant Framework and the local-first TradeVibe reference app.
 
 ## [Unreleased]
 
@@ -20,6 +20,10 @@ This project follows a practical changelog format for a local-first, self-hosted
 - Added filesystem-backed TTS audio cache under `runtime/audio_cache`.
 - Added filesystem-backed voice job records under `runtime/tts_jobs`.
 - Added binary WAV audio delivery for completed voice jobs.
+- Added local filesystem TTS worker:
+  - `scripts/tts-worker.mjs`
+  - `npm run tts:worker`
+  - `npm run tts:worker:once`
 - Added runtime directory preparation for:
   - `runtime/daily_vibes`
   - `runtime/logs`
@@ -52,7 +56,8 @@ This project follows a practical changelog format for a local-first, self-hosted
 ### Notes
 - TradeVibe is currently a local-first, single-node, self-hosted application.
 - The current rate limiter is in-memory and process-local. Multi-instance production deployment should replace it with Redis, a reverse proxy limiter, or a platform-level limiter.
-- The voice job API is currently cache-first and job-shaped, but cache misses are still generated synchronously inside the request. A real async worker queue is planned for a later implementation slice.
+- The voice job API is cache-first and job-shaped. Cache misses are queued as local filesystem jobs and processed by `scripts/tts-worker.mjs`.
+- The current worker is a local filesystem worker, not a Redis/BullMQ production queue.
 - The legacy `/api/voice?text=...` endpoint remains available as a fallback path.
 - The current default TTS path still uses Piper. Vietnamese TTS integration can be added later through Piper Vietnamese voices, VieNeu-TTS, or a cloud TTS provider.
 

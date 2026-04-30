@@ -2,18 +2,18 @@
   <img src="public/logo.png" alt="TradeVibe Logo" width="200"/>
 </div>
 
-# TradeVibe 🎧
+# Tifa Assistant Framework / TradeVibe Reference App
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.15-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 
-TradeVibe is a **local-first AI trader companion**. It combines a daily “vibe” dashboard, motivational quote, playlist bundle, voice clip, and the **ChatTifa** floating assistant to help traders stay focused, calm, and consistent.
+Tifa Assistant Framework is a reusable assistant foundation with TradeVibe kept as the local-first reference app. The reference app combines a daily “vibe” dashboard, motivational quote, playlist bundle, voice clip, and the **ChatTifa** floating assistant to help traders stay focused, calm, and consistent.
 
 The current codebase is designed for a **self-hosted single-node workstation/server** using:
 
-- **Next.js 15.5.5**
+- **Next.js 15.5.15**
 - **React 19.1.0**
 - **TypeScript**
 - **TailwindCSS**
@@ -23,7 +23,7 @@ The current codebase is designed for a **self-hosted single-node workstation/ser
 - **Python Insight Engine**
 - **Filesystem runtime artifacts**
 
-TradeVibe is not yet a multi-tenant SaaS platform. It is currently a solid local-first foundation that can later evolve into a reusable Tifa Assistant Framework.
+This repo is not yet a complete multi-tenant SaaS platform. It preserves TradeVibe local-first behavior while adding framework boundaries and SaaS-ready scaffolds for future deployments.
 
 ---
 
@@ -90,7 +90,7 @@ TradeVibe currently supports two voice paths:
 2. **Fallback path: legacy base64 voice endpoint**
    - `GET /api/voice?text=...`
 
-The frontend calls `playTifaVoice()`, which tries cached voice jobs first and falls back to the legacy voice endpoint if needed.
+The frontend calls `playTifaVoice()`, which tries cached voice jobs first and falls back to the legacy voice endpoint if needed. Cache misses are queued as local filesystem jobs and processed by `scripts/tts-worker.mjs` through `npm run tts:worker` or `npm run tts:worker:once`.
 
 ---
 
@@ -163,7 +163,7 @@ ChatTifa.tsx
 
 ### Frontend
 
-- Next.js `15.5.5`
+- Next.js `15.5.15`
 - React `19.1.0`
 - React DOM `19.1.0`
 - TypeScript
@@ -317,8 +317,8 @@ SPOTIFY_SECRET=
 ## Installation
 
 ```bash
-git clone git@github.com:tungpastry/tradevibe-org.git
-cd tradevibe-org
+git clone https://github.com/tungpastry/tifa-assistant-framework.git
+cd tifa-assistant-framework
 
 cp .env.example .env
 
