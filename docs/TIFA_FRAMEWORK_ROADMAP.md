@@ -35,8 +35,7 @@ The roadmap keeps Tifa useful as the reference local-first app while progressive
 ## Phase 5: Voice Providers
 
 - Abstract the current Piper runtime.
-- Add viPiper scaffold for Vietnamese Piper-compatible models.
-- Add VieNeu HTTP facade provider.
+- Keep standard Piper as the only bundled local voice provider.
 - Preserve async job semantics and local cache compatibility.
 
 ## Phase 6: SaaS Persistence

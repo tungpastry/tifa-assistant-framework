@@ -92,7 +92,7 @@ Returns:
 
 - local runtime directory status
 - Ollama-compatible endpoint status
-- Piper-compatible provider status
+- Piper local provider status
 - TTS worker heartbeat and queue stats
 - optional PostgreSQL/Redis/object storage/provider gateway/Text-to-SQL status
 

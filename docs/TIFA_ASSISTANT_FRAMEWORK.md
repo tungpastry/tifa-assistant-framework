@@ -55,7 +55,7 @@ The reusable framework should be split into clear module boundaries:
 | `tifa-provider-gateway` | LLM provider interface, router policy, model profiles, health, cost, and fallback |
 | `tifa-data-connectors` | PostgreSQL and future TimescaleDB, crypto, forex, stocks, and news connectors |
 | `tifa-text-to-sql` | Intent classification, QueryPlan generation, semantic layer, SQL compiler, and guardrails |
-| `tifa-voice` | Voice provider interface, Piper, viPiper, VieNeu facade, cache, jobs, and voice assets |
+| `tifa-voice` | Standard Piper local provider, cache, jobs, worker health, and voice assets |
 | `tifa-widget-react` | TifaWidget reference widget, React hooks, streaming client, voice client, and UI extension points |
 | `tifa-sdk` | Browser/server SDK for sessions, messages, streams, tools, voice, and usage events |
 | `tifa-admin-console` | Tenant, assistant, user, API key, provider key, usage, policy, and audit administration |
@@ -80,4 +80,3 @@ The repository can start with `lib/*` scaffold modules and later extract package
 - Keep local chat sessions working without a database.
 - Do not require Redis, PostgreSQL, object storage, or auth for default Tifa smoke tests.
 - Prefer additive contracts and compatibility shims over broad rewrites.
-

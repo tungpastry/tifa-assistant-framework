@@ -99,11 +99,7 @@ async function checkVoiceProviders(): Promise<Check> {
   const registry = createDefaultVoiceProviderRegistry();
   const providers = await registry.health();
   const defaultProvider = providers.find((provider) => provider.provider === "piper");
-  const status: Status = defaultProvider?.status === "ok"
-    ? "ok"
-    : providers.some((provider) => provider.status === "ok")
-    ? "degraded"
-    : "disabled";
+  const status: Status = defaultProvider?.status ?? "down";
 
   return {
     status,

@@ -31,7 +31,7 @@ const frameworkModules = [
   },
   {
     name: "tifa-voice",
-    description: "Voice jobs, Piper-compatible providers, VieNeu facade scaffold, and object storage contracts.",
+    description: "Piper local voice jobs, audio caching, worker health, and object storage contracts.",
     icon: Mic2,
   },
   {

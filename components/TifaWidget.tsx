@@ -81,7 +81,11 @@ export default function TifaWidget({ mood }: { mood: string }) {
           {voiceEnabled && voiceOptions.length > 1 && (
             <select
               value={selectedVoice}
-              onChange={(event) => setSelectedVoice(event.target.value)}
+              onChange={(event) => {
+                if (event.target.value === "tifa-default") {
+                  setSelectedVoice(event.target.value);
+                }
+              }}
               className="max-w-24 rounded bg-gray-900/70 px-1 py-0.5 text-[10px] text-gray-200 outline-none ring-1 ring-gray-700"
               aria-label="Voice"
             >

@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getVoiceProviders, playTifaVoice, type VoiceOption } from "./client";
+import {
+  getVoiceProviders,
+  playTifaVoice,
+  type TifaVoiceId,
+  type VoiceOption,
+} from "./client";
 
 export interface TifaVoicePlaybackResult {
   voiceJobId: string | null;
@@ -9,7 +14,7 @@ export interface TifaVoicePlaybackResult {
 
 export function useTifaVoice(defaultEnabled = true) {
   const [voiceEnabled, setVoiceEnabled] = useState(defaultEnabled);
-  const [selectedVoice, setSelectedVoice] = useState("tifa-default");
+  const [selectedVoice, setSelectedVoice] = useState<TifaVoiceId>("tifa-default");
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
   const greetingPlayedRef = useRef(false);
 
@@ -19,10 +24,12 @@ export function useTifaVoice(defaultEnabled = true) {
     getVoiceProviders()
       .then((result) => {
         if (cancelled) return;
-        const enabledVoices = result.voices.filter((voice) => voice.enabled);
+        const enabledVoices = result.voices.filter(
+          (voice) => voice.enabled && voice.provider === "piper" && voice.id === "tifa-default"
+        );
         setVoiceOptions(enabledVoices);
         if (!enabledVoices.some((voice) => voice.id === selectedVoice)) {
-          setSelectedVoice(enabledVoices[0]?.id ?? "tifa-default");
+          setSelectedVoice("tifa-default");
         }
       })
       .catch((err) => console.warn("Voice provider discovery failed:", err));

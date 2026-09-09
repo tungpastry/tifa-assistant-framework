@@ -68,11 +68,9 @@ The data connector layer provides safe access to financial datasets:
 
 ### Voice Layer
 
-The voice layer keeps the current async job semantics while allowing multiple providers:
+The voice layer keeps the current async job semantics with standard Piper for local synthesis:
 
-- Piper as the current local provider.
-- viPiper as a Piper-compatible Vietnamese provider scaffold.
-- VieNeu-TTS through a separate HTTP facade service.
+- Piper as the only bundled local provider.
 - Object storage output for SaaS.
 - Provider health and license class metadata.
 
@@ -104,6 +102,5 @@ Widget/SDK
 - Full billing engine.
 - Production Redis/object storage wiring.
 - Automatic model downloads.
-- Direct VieNeu model loading inside Next.js.
+- Direct heavy TTS model loading inside Next.js.
 - Raw Text-to-SQL execution from natural language.
-

@@ -1,4 +1,4 @@
-export type VoiceProviderName = "piper" | "vipiper" | "vieneu" | "openai" | "custom";
+export type VoiceProviderName = "piper";
 
 export type VoiceLicenseClass = "apache-2.0" | "mit" | "commercial" | "cc-by-nc" | "unknown" | string;
 

@@ -11,7 +11,7 @@ Role: Local-first assistant framework
 Frontend: Next.js 15.5.15 + React 19.1.0
 Runtime: filesystem state under runtime/
 Chat: TifaWidget with SSE streaming and non-streaming fallback
-Voice: Piper-compatible TTS with cache-first jobs and local worker
+Voice: standard Piper TTS with cache-first jobs and local worker
 AI backend: Ollama-compatible endpoint by default
 ```
 

@@ -124,7 +124,7 @@ export interface ToolCall {
 }
 
 export interface VoiceProviderConfig {
-  provider: "piper" | "vipiper" | "vieneu" | "openai" | "custom";
+  provider: "piper";
   voiceId: string;
   modelId: string;
   locale: string;
@@ -141,4 +141,3 @@ export interface ErrorEnvelope {
   retryable: boolean;
   details?: Record<string, unknown>;
 }
-

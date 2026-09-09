@@ -16,7 +16,6 @@ TIFA_PG_ENABLED=0
 TIFA_REDIS_ENABLED=0
 TIFA_OBJECT_STORAGE_ENABLED=0
 TIFA_TEXT_TO_SQL_ENABLED=0
-TIFA_VIENEU_ENABLED=0
 ```
 
 These defaults keep the framework in local-first mode. They do not require

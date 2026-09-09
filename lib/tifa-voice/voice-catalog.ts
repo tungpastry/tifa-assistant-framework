@@ -1,10 +1,10 @@
-export type TifaVoiceProviderReadiness = "default" | "scaffold" | "facade";
+export type TifaVoiceProviderReadiness = "default";
 
 export interface TifaVoiceProviderCatalogEntry {
-  id: "piper" | "vipiper" | "vieneu";
+  id: "piper";
   displayName: string;
   readiness: TifaVoiceProviderReadiness;
-  deployment: "local-binary" | "local-compatible" | "http-facade";
+  deployment: "local-binary";
   defaultLocale: string;
   env: string[];
   notes: string;
@@ -19,23 +19,5 @@ export const TIFA_VOICE_PROVIDER_CATALOG: TifaVoiceProviderCatalogEntry[] = [
     defaultLocale: "en-US",
     env: ["PIPER_BIN", "PIPER_MODEL", "PIPER_TIMEOUT_MS"],
     notes: "Default local provider used by the filesystem TTS worker.",
-  },
-  {
-    id: "vipiper",
-    displayName: "viPiper",
-    readiness: "scaffold",
-    deployment: "local-compatible",
-    defaultLocale: "vi-VN",
-    env: ["TIFA_VIPIPER_ENABLED", "TIFA_VIPIPER_MODEL", "TIFA_VIPIPER_VOICE_ID"],
-    notes: "Piper-compatible Vietnamese voice scaffold; disabled until explicitly configured.",
-  },
-  {
-    id: "vieneu",
-    displayName: "VieNeu facade",
-    readiness: "facade",
-    deployment: "http-facade",
-    defaultLocale: "vi-VN",
-    env: ["TIFA_VIENEU_ENABLED", "TIFA_VIENEU_BASE_URL", "TIFA_VIENEU_MODEL"],
-    notes: "HTTP facade only; heavy model code must stay outside Next.js route handlers.",
   },
 ];

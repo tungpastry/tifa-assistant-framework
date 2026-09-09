@@ -316,13 +316,14 @@ export async function streamTifaReply(options: {
 }
 
 export type VoiceJobStatus = "queued" | "processing" | "ready" | "failed";
+export type TifaVoiceId = "tifa-default";
 
 export interface VoiceJobResponse {
   status: VoiceJobStatus;
   cache_hit?: boolean;
   job_id: string;
   audio_url: string | null;
-  voice?: string;
+  voice?: TifaVoiceId;
   model?: string;
   error?: string | null;
 }
@@ -360,7 +361,7 @@ export async function getVoiceProviders(): Promise<{
 
 export async function createVoiceJob(
   text: string,
-  options?: { voice?: string; format?: string; signal?: AbortSignal }
+  options?: { voice?: TifaVoiceId; format?: string; signal?: AbortSignal }
 ): Promise<VoiceJobResponse> {
   const res = await fetch("/api/voice/jobs", {
     method: "POST",
@@ -420,7 +421,7 @@ export async function playAudioUrl(audioUrl: string): Promise<void> {
 export async function playVoiceJobAudio(
   text: string,
   options?: {
-    voice?: string;
+    voice?: TifaVoiceId;
     format?: string;
     signal?: AbortSignal;
     pollIntervalMs?: number;
@@ -489,7 +490,7 @@ export async function playLegacyVoice(
 
 export async function playTifaVoice(
   text: string,
-  options?: { voice?: string; signal?: AbortSignal }
+  options?: { voice?: TifaVoiceId; signal?: AbortSignal }
 ): Promise<{ used: "job" | "legacy"; cacheHit?: boolean; jobId?: string }> {
   try {
     return await playVoiceJobAudio(text, options);

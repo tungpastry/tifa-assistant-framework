@@ -6,6 +6,10 @@ import { randomUUID } from "crypto";
 import { jsonError } from "@/lib/api";
 import { checkRateLimit, getClientIp, parsePositiveInt } from "@/lib/rate-limit";
 import {
+  PIPER_DEFAULT_VOICE_ID,
+  isSupportedPiperVoiceId,
+} from "@/lib/voice/providers/piper";
+import {
   MAX_TTS_TEXT_LENGTH,
   CreateVoiceJobInput,
   createTtsCacheKey,
@@ -45,6 +49,14 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!isSupportedPiperVoiceId(body.voice)) {
+      return jsonError(
+        "VALIDATION_ERROR",
+        `Unsupported voice. Only ${PIPER_DEFAULT_VOICE_ID} is available.`,
+        400
+      );
+    }
+
     const clientIp = getClientIp(req);
     const rateLimitResult = checkRateLimit({
       key: `voice-job:${clientIp}`,
@@ -74,7 +86,7 @@ export async function POST(req: Request) {
       // In a real system, we'd update the hit_count here asynchronously
       const jobId = `tts_${randomUUID()}`;
       const now = new Date().toISOString();
-      const voice = body.voice || identity.voice;
+      const voice = identity.voice;
       const model = identity.modelName;
       const audioUrl = `/api/voice/jobs/${jobId}/audio`;
 
@@ -104,7 +116,10 @@ export async function POST(req: Request) {
     }
 
     const jobId = `tts_${randomUUID()}`;
-    const jobRecord = await createQueuedVoiceJob({ ...body, text }, jobId);
+    const jobRecord = await createQueuedVoiceJob(
+      { ...body, text, voice: PIPER_DEFAULT_VOICE_ID },
+      jobId
+    );
 
     return NextResponse.json(
       {

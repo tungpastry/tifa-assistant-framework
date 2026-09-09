@@ -16,7 +16,7 @@ It runs without PostgreSQL, Redis, object storage, auth, or cloud provider keys 
 - Local persistent chat sessions.
 - Cache-first async voice jobs.
 - Local TTS worker with heartbeat.
-- Piper-compatible voice provider scaffold.
+- Standard Piper local voice provider.
 - LLM provider gateway with an Ollama-compatible provider.
 - Safe PostgreSQL connector scaffold.
 - Guarded Text-to-SQL planning scaffold.
@@ -31,7 +31,7 @@ It runs without PostgreSQL, Redis, object storage, auth, or cloud provider keys 
 - TailwindCSS
 - Framer Motion
 - Ollama-compatible local LLM endpoint
-- Piper-compatible local TTS
+- Standard Piper local TTS
 
 ## Stable Local APIs
 

@@ -19,7 +19,7 @@ All notable changes to Tifa Assistant Framework are documented here.
   - `npm run tts:worker:once`
 - TTS worker heartbeat at `runtime/tts_worker_heartbeat.json`.
 - Provider gateway scaffold with an Ollama-compatible provider.
-- Voice provider scaffolds for Piper, viPiper, and VieNeu facade mode.
+- Standard Piper local voice provider with cache-first jobs.
 - Safe PostgreSQL connector scaffold.
 - Guarded Text-to-SQL planning scaffold.
 - SaaS schema and optional adapter scaffolds.
@@ -33,6 +33,7 @@ All notable changes to Tifa Assistant Framework are documented here.
 ### Removed
 - Removed dashboard artifact API routes and app coupling that were unrelated to the framework runtime.
 - Removed generated artifact pipeline files that were not part of the assistant framework.
+- Removed unused optional voice-provider scaffolds so local TTS is Piper-only.
 
 ## [0.1.0]
 

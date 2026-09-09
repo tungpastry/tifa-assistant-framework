@@ -9,7 +9,7 @@ preserving existing imports.
 | `lib/tifa-core` | Shared assistant contracts, policies, events, usage, and errors |
 | `lib/tifa-runtime` | Local runtime paths, sessions/messages, request helpers, worker status |
 | `lib/tifa-provider-gateway` | LLM provider contracts, model profiles, router, provider adapters |
-| `lib/tifa-voice` | Voice provider contracts, Piper/viPiper/VieNeu scaffolds, cache/job helpers |
+| `lib/tifa-voice` | Standard Piper local provider contracts, cache/job helpers, and worker health |
 | `lib/tifa-data-connectors` | Safe data connector contracts, PostgreSQL scaffold, Text-to-SQL guardrails |
 | `lib/tifa-widget` | Frontend widget contracts for future React package extraction |
 

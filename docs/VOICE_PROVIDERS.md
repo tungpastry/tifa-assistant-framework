@@ -1,6 +1,6 @@
-# Voice Providers
+# Piper Local Voice
 
-Tifa currently uses local Piper TTS through async voice jobs and a filesystem audio cache. The Tifa voice layer should preserve that behavior while adding provider contracts for SaaS and multilingual deployments.
+Tifa uses standard Piper TTS through async voice jobs and a filesystem audio cache. Piper is the only bundled and supported voice provider. The provider interface remains stable so the runtime, healthcheck, and client discovery API share one contract.
 
 ## Current Local Voice Runtime
 
@@ -24,7 +24,7 @@ Existing semantics:
 - Client polls until ready.
 - Client falls back to the legacy endpoint when job playback fails.
 
-## Target Provider Interface
+## Provider Interface
 
 Providers should expose:
 
@@ -36,19 +36,17 @@ Providers should expose:
 - `supportsVoiceCloning`
 - `licenseClass`
 
-The initial provider scaffold lives under:
+The Piper provider boundary lives under:
 
 ```text
 lib/voice/types.ts
 lib/voice/provider-registry.ts
 lib/voice/providers/piper.ts
-lib/voice/providers/vipiper.ts
-lib/voice/providers/vieneu.ts
 ```
 
 ## Piper Provider
 
-Piper remains the default local-first provider. Existing environment variables must keep working:
+Piper is the only local-first provider. Existing environment variables must keep working:
 
 ```env
 PIPER_BIN=/home/nexus/piper-env/bin/piper
@@ -56,37 +54,7 @@ PIPER_MODEL=/home/nexus/piper/voices/en_US-libritts-high.onnx
 PIPER_TIMEOUT_MS=10000
 ```
 
-## viPiper Provider
-
-viPiper is planned as a Piper-compatible Vietnamese provider scaffold. It should support ONNX model paths and should not download models automatically.
-
-Suggested env:
-
-```env
-TIFA_VIPIPER_ENABLED=0
-TIFA_VIPIPER_BIN=/path/to/piper
-TIFA_VIPIPER_MODEL=/path/to/vi_VN-model.onnx
-```
-
-## VieNeu-TTS Provider
-
-VieNeu-TTS should be integrated through an HTTP facade service, not direct model loading inside Next.js.
-
-Suggested env:
-
-```env
-TIFA_VIENEU_ENABLED=0
-TIFA_VIENEU_BASE_URL=http://127.0.0.1:8089
-TIFA_VIENEU_MODEL=pnnbao-ump/VieNeu-TTS-q4-gguf
-TIFA_VIENEU_LICENSE_CLASS=apache-2.0
-```
-
-Production-safe default recommendation:
-
-- Use the 0.5B Apache-2.0 model or 0.5B q4/q8 GGUF Apache-2.0 variants for SaaS/commercial mode.
-- Do not default to 0.3B CC BY-NC models for commercial or SaaS mode.
-
-See `docs/VIENEU_TTS_INTEGRATION.md` for the facade deployment guidance.
+Voice job requests may omit `voice` or send `tifa-default`. Other voice IDs are rejected with a validation error.
 
 ## SaaS Audio Storage
 

@@ -18,6 +18,7 @@ export {
   type ChatMessageRole,
   type ChatSessionRecord,
   type TifaStreamEvent,
+  type TifaVoiceId,
   type VoiceJobResponse,
   type VoiceJobStatus,
   type VoiceOption,

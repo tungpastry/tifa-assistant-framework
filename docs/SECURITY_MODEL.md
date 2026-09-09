@@ -97,7 +97,7 @@ Voice providers should expose:
 - Voice cloning support.
 - Health status.
 
-For SaaS mode, generated audio should move to object storage with lifecycle policies. VieNeu-TTS should run behind a separate facade service. Do not download or execute heavy model code inside Next.js request handlers.
+For SaaS mode, generated audio should move to object storage with lifecycle policies. Do not download or execute heavy model code inside Next.js request handlers.
 
 ## Audit Event Categories
 

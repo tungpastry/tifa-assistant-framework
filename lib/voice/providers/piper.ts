@@ -5,8 +5,18 @@ import { parseTimeoutMs } from "@/lib/api";
 import type { VoiceInfo, VoiceProvider, VoiceProviderHealth, VoiceSynthesisInput } from "../types";
 import { assertVoiceInput, normalizeVoiceText } from "./base";
 
+export const PIPER_PROVIDER_NAME = "piper" as const;
+export const PIPER_DEFAULT_VOICE_ID = "tifa-default" as const;
+export type PiperVoiceId = typeof PIPER_DEFAULT_VOICE_ID;
+
+export function isSupportedPiperVoiceId(
+  voice: unknown
+): voice is undefined | PiperVoiceId {
+  return voice === undefined || voice === PIPER_DEFAULT_VOICE_ID;
+}
+
 export interface PiperVoiceRuntimeConfig {
-  voiceId: string;
+  voiceId: PiperVoiceId;
   modelPath: string;
   modelName: string;
   piperBin: string;
@@ -17,7 +27,7 @@ export function getPiperVoiceRuntimeConfig(): PiperVoiceRuntimeConfig {
   const modelPath = process.env.PIPER_MODEL || "/home/nexus/piper/voices/en_US-libritts-high.onnx";
 
   return {
-    voiceId: "tifa-default",
+    voiceId: PIPER_DEFAULT_VOICE_ID,
     modelPath,
     modelName: path.basename(modelPath),
     piperBin: process.env.PIPER_BIN || "/home/nexus/piper-env/bin/piper",
@@ -26,7 +36,7 @@ export function getPiperVoiceRuntimeConfig(): PiperVoiceRuntimeConfig {
 }
 
 export class PiperVoiceProvider implements VoiceProvider {
-  name = "piper";
+  name = PIPER_PROVIDER_NAME;
   supportsStreaming = false;
   supportsVoiceCloning = false;
   licenseClass = "unknown";

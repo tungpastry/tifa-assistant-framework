@@ -74,6 +74,19 @@ if [[ -z "${GEMINI_API_KEY:-}" ]] && ! grep -q '"provider":"gemini","status":"di
   rm -f "$temp_file"
   exit 1
 fi
+if ! node -e '
+const fs = require("fs");
+const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const providers = data?.checks?.voice_providers?.details?.providers;
+if (!Array.isArray(providers) || providers.length !== 1) process.exit(1);
+if (providers[0]?.provider !== "piper") process.exit(1);
+if (providers[0]?.metadata?.defaultVoiceId !== "tifa-default") process.exit(1);
+' "$temp_file"; then
+  echo " ❌ FAIL (Health must report only Piper with tifa-default)"
+  cat "$temp_file"
+  rm -f "$temp_file"
+  exit 1
+fi
 rm -f "$temp_file"
 echo ""
 
@@ -186,9 +199,40 @@ echo ""
 
 # --- Voice Job API Validation ---
 echo "6. Voice Job API Validation"
+echo -n "Checking GET /api/voice/providers (Piper only)..."
+voice_providers_response=$(mktemp)
+voice_providers_status=$(curl -s -o "$voice_providers_response" -w "%{http_code}" "${BASE_URL}/api/voice/providers")
+if [[ "$voice_providers_status" == "200" ]] && node -e '
+const fs = require("fs");
+const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+if (!Array.isArray(data.providers) || data.providers.length !== 1) process.exit(1);
+if (data.providers[0]?.provider !== "piper") process.exit(1);
+if (!Array.isArray(data.voices)) process.exit(1);
+if (!data.voices.every((voice) => voice.provider === "piper" && voice.id === "tifa-default")) process.exit(1);
+' "$voice_providers_response"; then
+  echo " ✅ OK (200)"
+else
+  echo " ❌ FAIL (Expected Piper-only discovery response, got $voice_providers_status)"
+  cat "$voice_providers_response"
+  rm -f "$voice_providers_response"
+  exit 1
+fi
+rm -f "$voice_providers_response"
 assert_status "POST /api/voice/jobs (Invalid JSON)" "400" -X POST -H "Content-Type: application/json" -d '{"text":"hello"' "${BASE_URL}/api/voice/jobs"
 assert_status "POST /api/voice/jobs (Empty Text)" "400" -X POST -H "Content-Type: application/json" -d '{"text":""}' "${BASE_URL}/api/voice/jobs"
 assert_status "POST /api/voice/jobs (Too Long)" "413" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${LONG_TEXT}\"}" "${BASE_URL}/api/voice/jobs"
+echo -n "Checking POST /api/voice/jobs (Unsupported Voice)..."
+unsupported_voice_response=$(mktemp)
+unsupported_voice_status=$(curl -s -o "$unsupported_voice_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d '{"text":"hello","voice":"unsupported"}' "${BASE_URL}/api/voice/jobs")
+if [[ "$unsupported_voice_status" == "400" ]] && grep -q '"code":"VALIDATION_ERROR"' "$unsupported_voice_response"; then
+  echo " ✅ OK (400)"
+else
+  echo " ❌ FAIL (Expected 400 VALIDATION_ERROR, got $unsupported_voice_status)"
+  cat "$unsupported_voice_response"
+  rm -f "$unsupported_voice_response"
+  exit 1
+fi
+rm -f "$unsupported_voice_response"
 assert_status "GET /api/voice/jobs/nonexistent_job" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job"
 assert_status "GET /api/voice/jobs/nonexistent_job/audio" "404" "${BASE_URL}/api/voice/jobs/nonexistent_job/audio"
 echo ""
@@ -199,12 +243,12 @@ echo -n "Checking POST /api/voice/jobs (Queued or Cached)..."
 voice_job_response=$(mktemp)
 voice_job_text="Voice job validation smoke $(date +%s)"
 voice_job_status=$(curl -s -o "$voice_job_response" -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "{\"text\":\"${voice_job_text}\"}" "${BASE_URL}/api/voice/jobs")
-if [[ "$voice_job_status" == "200" || "$voice_job_status" == "202" ]]; then
+if [[ "$voice_job_status" == "200" || "$voice_job_status" == "202" ]] && grep -q '"voice":"tifa-default"' "$voice_job_response"; then
   validation_job_id=$(extract_json_field "$voice_job_response" "job_id")
   validation_job_status=$(extract_json_field "$voice_job_response" "status")
   echo " ✅ OK ($voice_job_status, $validation_job_id, $validation_job_status)"
 else
-  echo " ❌ FAIL (Expected 200 or 202, got $voice_job_status)"
+  echo " ❌ FAIL (Expected Piper tifa-default job with 200 or 202, got $voice_job_status)"
   cat "$voice_job_response"
   rm -f "$voice_job_response"
   exit 1

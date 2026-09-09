@@ -4,7 +4,12 @@ import crypto from "crypto";
 import { spawn } from "child_process";
 import { getAudioCacheDir, getTtsJobsDir, ensureRuntimeDirs } from "./runtime";
 import { parseTimeoutMs } from "./api";
-import { getPiperVoiceRuntimeConfig } from "./voice/providers/piper";
+import {
+  PIPER_DEFAULT_VOICE_ID,
+  getPiperVoiceRuntimeConfig,
+  isSupportedPiperVoiceId,
+  type PiperVoiceId,
+} from "./voice/providers/piper";
 
 export const MAX_TTS_TEXT_LENGTH = 500;
 
@@ -12,7 +17,7 @@ export type VoiceJobStatus = "queued" | "processing" | "ready" | "failed";
 
 export interface CreateVoiceJobInput {
   text: string;
-  voice?: string;
+  voice?: PiperVoiceId;
   modelPath?: string;
   format?: string;
 }
@@ -56,7 +61,7 @@ export function getVoiceIdentity() {
 export function createTtsCacheKey(input: CreateVoiceJobInput): string {
   const identity = getVoiceIdentity();
   const normalizedText = normalizeTtsText(input.text);
-  const voice = input.voice || identity.voice;
+  const voice = identity.voice;
   const modelPath = input.modelPath || identity.modelPath;
   const format = input.format || "wav";
 
@@ -107,6 +112,9 @@ export async function retryFailedVoiceJob(jobId: string): Promise<VoiceJobRecord
   if (!job.input || !normalizeTtsText(job.input.text)) {
     throw new Error(`Voice job ${jobId} cannot be retried because original input is missing.`);
   }
+  if (!isSupportedPiperVoiceId(job.input.voice) || job.voice !== PIPER_DEFAULT_VOICE_ID) {
+    throw new Error(`Voice job ${jobId} cannot be retried because its voice is not supported.`);
+  }
 
   job.status = "queued";
   job.error = null;
@@ -125,6 +133,7 @@ export async function createQueuedVoiceJob(
   const normalizedInput: CreateVoiceJobInput = {
     ...input,
     text: normalizeTtsText(input.text),
+    voice: PIPER_DEFAULT_VOICE_ID,
   };
   const now = new Date().toISOString();
   const jobRecord: VoiceJobRecord = {
@@ -133,7 +142,7 @@ export async function createQueuedVoiceJob(
     cache_key: createTtsCacheKey(normalizedInput),
     audio_url: null,
     error: null,
-    voice: normalizedInput.voice || identity.voice,
+    voice: identity.voice,
     model: identity.modelName,
     input: normalizedInput,
     created_at: now,
@@ -175,7 +184,7 @@ export async function generateVoiceToCache(
     cache_key: cacheKey,
     audio_url: null,
     error: null,
-    voice: input.voice || identity.voice,
+    voice: identity.voice,
     model: identity.modelName,
     input,
     created_at: now,

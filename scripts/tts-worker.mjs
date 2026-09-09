@@ -25,6 +25,7 @@ const piperTimeoutMs = parsePositiveInt(process.env.PIPER_TIMEOUT_MS, 10000);
 const staleProcessingMs = parsePositiveInt(process.env.TIFA_TTS_STALE_PROCESSING_MS, 300000);
 const lockStaleMs = parsePositiveInt(process.env.TIFA_TTS_WORKER_LOCK_STALE_MS, 60000);
 const once = process.argv.includes("--once");
+const PIPER_DEFAULT_VOICE_ID = "tifa-default";
 
 function loadDotEnv(filePath) {
   if (!existsSync(filePath)) return;
@@ -72,7 +73,7 @@ function normalizeText(text) {
 function getVoiceIdentity() {
   const modelPath = process.env.PIPER_MODEL || "/home/nexus/piper/voices/en_US-libritts-high.onnx";
   return {
-    voice: "tifa-default",
+    voice: PIPER_DEFAULT_VOICE_ID,
     modelPath,
     modelName: path.basename(modelPath),
     piperBin: process.env.PIPER_BIN || "/home/nexus/piper-env/bin/piper",
@@ -82,13 +83,19 @@ function getVoiceIdentity() {
 function createTtsCacheKey(input) {
   const identity = getVoiceIdentity();
   const text = normalizeText(input.text);
-  const voice = input.voice || identity.voice;
+  const voice = identity.voice;
   const modelPath = input.modelPath || identity.modelPath;
   const format = input.format || "wav";
   return crypto
     .createHash("sha256")
     .update(`${text}|${voice}|${modelPath}|${format}`)
     .digest("hex");
+}
+
+function hasSupportedPiperVoice(job) {
+  const jobVoice = job.voice || PIPER_DEFAULT_VOICE_ID;
+  const inputVoice = job.input?.voice || PIPER_DEFAULT_VOICE_ID;
+  return jobVoice === PIPER_DEFAULT_VOICE_ID && inputVoice === PIPER_DEFAULT_VOICE_ID;
 }
 
 function getJobPath(jobId) {
@@ -335,6 +342,13 @@ async function generateAudio(job) {
 }
 
 async function processQueuedJob(job) {
+  if (!hasSupportedPiperVoice(job)) {
+    const error = new Error(`Unsupported voice. Only ${PIPER_DEFAULT_VOICE_ID} is available.`);
+    await markFailed(job, error);
+    console.error(`failed ${job.job_id}:`, error);
+    return;
+  }
+
   job.status = "processing";
   job.error = null;
   await updateJob(job);

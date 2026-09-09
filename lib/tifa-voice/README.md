@@ -3,11 +3,11 @@
 Voice boundary for local-first TTS and future SaaS voice assets:
 
 - provider contracts
-- Piper, viPiper, and VieNeu provider scaffolds
+- standard Piper local provider
 - cache/job helpers
 - local worker heartbeat/status
 
-Tifa remains Piper-first by default. viPiper and VieNeu are opt-in scaffolds.
+Tifa uses standard Piper as its only bundled local voice provider.
 
 ## Public Import
 
@@ -25,7 +25,7 @@ import {
 ## Owns
 
 - Voice provider contracts and provider registry.
-- Piper, viPiper, and VieNeu facade provider boundaries.
+- Standard Piper local provider boundary.
 - Local voice job/cache helpers.
 - Worker heartbeat/status contracts.
 - Voice provider catalog metadata.
@@ -34,7 +34,7 @@ import {
 
 - Browser playback UI.
 - Cloud object storage credentials.
-- Heavy VieNeu model runtime.
+- Heavy model runtime inside the Next.js process.
 - Redis/BullMQ production queue wiring.
 
 ## Extraction Notes
