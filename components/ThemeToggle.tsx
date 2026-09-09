@@ -1,13 +1,14 @@
 "use client";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
+
+const subscribe = () => () => {};
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
 
-  useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
   return (

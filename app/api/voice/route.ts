@@ -26,7 +26,7 @@ async function generateVoice(text: string, signal: AbortSignal): Promise<Buffer>
   try {
     await new Promise<void>((resolve, reject) => {
       const piperProcess = spawn(
-        piperBin,
+        /* turbopackIgnore: true */ piperBin,
         ["--model", modelPath, "--output_file", outputFile],
         { signal }
       );

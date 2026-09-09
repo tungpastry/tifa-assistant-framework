@@ -15,6 +15,8 @@ auth, or SaaS mode.
 - Project path: `/home/nexus/projects/tifa-assistant-framework`
 - Environment file: `/home/nexus/projects/tifa-assistant-framework/.env`
 - Runtime directory is writable by `nexus`
+- Node.js is `20.9.0` or newer (`22.18.0` is used by the provided service files)
+- Dependencies were installed reproducibly with `npm ci`
 - `npm run build` has completed before starting the web service
 
 ## Install Services
@@ -77,4 +79,3 @@ report the worker as degraded rather than failing the entire local runtime.
 - tifa-web reads PORT from /home/nexus/projects/tifa-assistant-framework/.env.
 - Tifa healthcheck: http://127.0.0.1:3205/api/health.
 - Do not use port 3100 for Tifa on this server.
-

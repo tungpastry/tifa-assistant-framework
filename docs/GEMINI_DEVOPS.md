@@ -8,7 +8,7 @@ Gemini CLI is a development and DevOps assistant for the `tifa-assistant-framewo
 Repo: tifa-assistant-framework
 Path: /home/nexus/projects/tifa-assistant-framework
 Role: Local-first assistant framework
-Frontend: Next.js 15.5.15 + React 19.1.0
+Frontend: Next.js 16.3.4 + React 19.3.0 (Turbopack)
 Runtime: filesystem state under runtime/
 Chat: TifaWidget with SSE streaming and non-streaming fallback
 Voice: standard Piper TTS with cache-first jobs and local worker

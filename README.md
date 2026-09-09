@@ -25,8 +25,9 @@ It runs without PostgreSQL, Redis, object storage, auth, or cloud provider keys 
 
 ## Tech Stack
 
-- Next.js `15.5.15`
-- React `19.1.0`
+- Node.js `20.9.0` or newer
+- Next.js `16.3.4` with Turbopack
+- React `19.3.0`
 - TypeScript
 - TailwindCSS
 - Framer Motion
@@ -66,7 +67,7 @@ runtime/
 git clone https://github.com/tungpastry/tifa-assistant-framework.git
 cd tifa-assistant-framework
 cp .env.example .env
-npm install
+npm ci
 bash scripts/prepare-runtime.sh
 ```
 
@@ -153,6 +154,8 @@ npm run check:core-package
 npm run lint
 npm run build
 npm run check
+npm run audit
+npm run audit:prod
 npm run smoke:api
 node --check scripts/tts-worker.mjs
 npm run tts:worker:once

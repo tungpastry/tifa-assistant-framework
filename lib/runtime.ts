@@ -13,7 +13,7 @@ export function resolveFromRepoRoot(targetPath: string) {
     return targetPath;
   }
 
-  return path.join(getRepoRoot(), targetPath);
+  return path.join(/* turbopackIgnore: true */ getRepoRoot(), targetPath);
 }
 
 export function getRuntimeDir() {
@@ -50,7 +50,7 @@ export function ensureRuntimeDirs() {
     getTtsJobsDir(),
     getChatSessionsDir(),
   ]) {
-    if (!fs.existsSync(dir)) {
+    if (!fs.existsSync(/* turbopackIgnore: true */ dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
   }
@@ -111,9 +111,11 @@ export function encodeAudioFile(filePath: string | null | undefined) {
   }
 
   const resolvedPath = resolveFromRepoRoot(filePath);
-  if (!fs.existsSync(resolvedPath)) {
+  if (!fs.existsSync(/* turbopackIgnore: true */ resolvedPath)) {
     return null;
   }
 
-  return fs.readFileSync(resolvedPath).toString("base64");
+  return fs
+    .readFileSync(/* turbopackIgnore: true */ resolvedPath)
+    .toString("base64");
 }

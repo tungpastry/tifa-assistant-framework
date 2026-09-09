@@ -16,7 +16,8 @@ Check:
 ## App Does Not Start
 
 ```bash
-npm install
+npm ci
+npm run audit
 npm run build
 PORT=3100 npm run start
 ```

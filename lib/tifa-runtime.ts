@@ -49,7 +49,10 @@ export function getTifaRuntimeConfig(): TifaRuntimeConfig {
 
 export async function readTifaPrompt(promptPath: string): Promise<string> {
   try {
-    const fullPath = path.resolve(process.cwd(), promptPath);
+    const fullPath = path.resolve(
+      /* turbopackIgnore: true */ process.cwd(),
+      promptPath
+    );
     return await fs.readFile(fullPath, "utf-8");
   } catch {
     console.warn(`Could not read Tifa prompt from ${promptPath}, using default.`);

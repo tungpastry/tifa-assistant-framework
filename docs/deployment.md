@@ -9,7 +9,8 @@ cd /home/nexus/projects
 git clone git@github.com:tungpastry/tifa-assistant-framework.git
 cd tifa-assistant-framework
 cp .env.example .env
-npm install
+npm ci
+npm run audit
 npm run build
 ```
 
@@ -46,6 +47,8 @@ See `docs/LOCAL_PRODUCTION_SERVICES.md`.
 git diff --check
 npm run lint
 npm run build
+npm run audit
+npm run audit:prod
 npm run smoke:api
 node --check scripts/tts-worker.mjs
 npm run tts:worker:once
