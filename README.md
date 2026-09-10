@@ -1,10 +1,10 @@
-# Tifa Assistant Framework
+# Tifa AI
 
-![Tifa Assistant logo featuring a coding robot](public/tifa-assistant-logo.png)
+![Tifa AI coding robot logo](public/tifa-assistant-logo.png)
 
-**Hey trader, how are you feeling today?**
+**One Framework, Every Assistant Experience**
 
-Tifa Assistant Framework is a local-first foundation for building streaming AI assistants with voice jobs, provider routing, guarded data access, and SaaS-ready contracts.
+Tifa AI is the product identity for the `tifa-assistant-framework` repository, a local-first foundation for building streaming AI assistants with voice jobs, provider routing, guarded data access, and SaaS-ready contracts.
 
 It runs without PostgreSQL, Redis, object storage, auth, or cloud provider keys by default. Optional SaaS components are scaffolded behind explicit environment flags.
 

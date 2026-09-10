@@ -55,7 +55,7 @@ export default function Home() {
             <div className="relative h-44 w-44 overflow-hidden rounded-full border border-pink-300/30 bg-black shadow-[0_0_50px_rgba(236,72,153,0.18)] sm:h-52 sm:w-52">
               <Image
                 src="/tifa-assistant-mark.png"
-                alt="Tifa Assistant coding robot logo"
+                alt="Tifa AI coding robot logo"
                 fill
                 priority
                 sizes="(min-width: 1024px) 208px, 176px"
@@ -68,10 +68,10 @@ export default function Home() {
                 Local-first assistant framework
               </p>
               <h1 className="text-4xl font-semibold tracking-normal text-white sm:text-6xl">
-                Tifa Assistant Framework
+                Tifa AI
               </h1>
               <p className="mt-4 text-lg font-medium text-cyan-200 sm:text-xl">
-                Hey trader, how are you feeling today?
+                One Framework, Every Assistant Experience
               </p>
               <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-300 sm:text-lg">
                 A reusable foundation for streaming AI assistants, provider routing,

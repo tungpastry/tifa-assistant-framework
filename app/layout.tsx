@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-const brandSlogan = "Hey trader, how are you feeling today?";
+const brandSlogan = "One Framework, Every Assistant Experience";
 const siteDescription = `${brandSlogan} Local-first assistant framework for streaming chat, voice jobs, provider routing, data connectors, and SaaS-ready scaffolds.`;
 const siteUrl = process.env.TIFA_BASE_URL || "http://localhost:3100";
 
@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Tifa Assistant Framework",
+  title: "Tifa AI",
   description: siteDescription,
   icons: {
     icon: {
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Tifa Assistant Framework",
+    title: "Tifa AI",
     description: siteDescription,
     type: "website",
     images: [
@@ -43,13 +43,13 @@ export const metadata: Metadata = {
         url: "/tifa-assistant-social.png",
         width: 1200,
         height: 630,
-        alt: "Tifa Assistant logo featuring a coding robot",
+        alt: "Tifa AI coding robot logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tifa Assistant Framework",
+    title: "Tifa AI",
     description: siteDescription,
     images: ["/tifa-assistant-social.png"],
   },
