@@ -13,6 +13,7 @@ import type { TifaWidgetMessage } from "./types";
 
 export interface TifaChatOptions {
   mood: string;
+  active?: boolean;
   onGreeting?: (text: string) => Promise<{ voiceJobId?: string | null } | void>;
   onAssistantReply?: (text: string) => Promise<{ voiceJobId?: string | null } | void>;
 }
@@ -30,7 +31,7 @@ function shouldFallback(err: unknown): boolean {
 }
 
 export function useTifaChat(options: TifaChatOptions) {
-  const { mood, onGreeting, onAssistantReply } = options;
+  const { mood, active = true, onGreeting, onAssistantReply } = options;
   const moodLower = mood.toLowerCase();
   const [messages, setMessages] = useState<TifaWidgetMessage[]>([]);
   const [input, setInput] = useState("");
@@ -116,6 +117,7 @@ export function useTifaChat(options: TifaChatOptions) {
   }, []);
 
   useEffect(() => {
+    if (!active) return;
     if (greetingInitializedRef.current) return;
     greetingInitializedRef.current = true;
 
@@ -123,7 +125,7 @@ export function useTifaChat(options: TifaChatOptions) {
     setMessages([{ id: createMessageId(), sender: "tifa", text: greetText }]);
     void persistChatMessage("assistant", greetText);
     void onGreeting?.(greetText);
-  }, [onGreeting, persistChatMessage]);
+  }, [active, onGreeting, persistChatMessage]);
 
   const sendMessage = useCallback(async () => {
     const outgoingMessage = input.trim();

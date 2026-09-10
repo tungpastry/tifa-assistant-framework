@@ -7,6 +7,12 @@ All notable changes to Tifa Assistant Framework are documented here.
 ### Added
 - Playwright Chromium end-to-end coverage for the Tifa widget on desktop and mobile.
 - A read-only deployment check for runtime health and the Piper-only provider contract.
+- Tifa Aurora dark and light themes with semantic, WCAG-checked color tokens.
+- Responsive launcher, AI processing details, and accessible chat composer for the Tifa widget.
+
+### Changed
+- The landing page now uses the Tifa Aurora Console visual system and robot-led layout.
+- Tifa chat sessions and greeting audio now begin after the user opens the collapsed widget.
 
 ## [0.1.0] - 2026-09-10
 

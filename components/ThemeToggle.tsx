@@ -1,26 +1,31 @@
 "use client";
+
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
-import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
 
 const subscribe = () => () => {};
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return <span aria-hidden="true" className="block size-11" />;
+  }
+
+  const isDark = resolvedTheme !== "light";
+  const nextTheme = isDark ? "light" : "dark";
 
   return (
     <button
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="text-xl p-2 rounded-lg bg-gray-700/40 hover:bg-gray-600 transition"
+      type="button"
+      onClick={() => setTheme(nextTheme)}
+      className="grid size-11 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--control-border)] hover:text-[var(--foreground)]"
+      aria-label={`Switch to ${nextTheme} theme`}
+      title={`Switch to ${nextTheme} theme`}
     >
-      {theme === "light" ? (
-        <BsMoonStarsFill className="text-yellow-300" />
-      ) : (
-        <BsSunFill className="text-yellow-400" />
-      )}
+      {isDark ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
     </button>
   );
 }
