@@ -1,7 +1,13 @@
 # Tifa AI
 
-[![CI](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/tungpastry/tifa-assistant-framework)](https://github.com/tungpastry/tifa-assistant-framework/releases/latest)
+[![CI status](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml)
+[![Release workflow status](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/release.yml/badge.svg)](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/tungpastry/tifa-assistant-framework?sort=semver)](https://github.com/tungpastry/tifa-assistant-framework/releases/latest)
+[![License](https://img.shields.io/github/license/tungpastry/tifa-assistant-framework)](https://github.com/tungpastry/tifa-assistant-framework/blob/main/LICENSE)
+[![Node.js engine](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftungpastry%2Ftifa-assistant-framework%2Fmain%2Fpackage.json&query=%24.engines.node&label=Node.js)](https://github.com/tungpastry/tifa-assistant-framework/blob/main/package.json)
+[![Next.js version](https://img.shields.io/github/package-json/dependency-version/tungpastry/tifa-assistant-framework/next)](https://github.com/tungpastry/tifa-assistant-framework/blob/main/package.json)
+[![React version](https://img.shields.io/github/package-json/dependency-version/tungpastry/tifa-assistant-framework/react)](https://github.com/tungpastry/tifa-assistant-framework/blob/main/package.json)
+[![Primary language](https://img.shields.io/github/languages/top/tungpastry/tifa-assistant-framework)](https://github.com/tungpastry/tifa-assistant-framework/search?l=typescript)
 
 ![Tifa AI coding robot logo](public/tifa-assistant-logo.png)
 
