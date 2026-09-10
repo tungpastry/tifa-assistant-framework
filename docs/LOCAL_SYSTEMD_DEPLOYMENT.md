@@ -63,6 +63,43 @@ sudo systemctl restart tifa-tts-worker
 curl -s http://127.0.0.1:3205/api/health | jq .
 ```
 
+## Mac Development Access
+
+The web service binds to `0.0.0.0`. Keep Ubuntu firewall access scoped to the
+development Mac instead of exposing port 3205 to the whole LAN:
+
+```bash
+sudo ufw allow from 192.168.1.7 to 192.168.1.30 port 3205 proto tcp \
+  comment "Tifa web from Mac dev"
+sudo ufw status numbered
+```
+
+Verify the route from the Mac:
+
+```bash
+curl -fsS http://192.168.1.30:3205/api/health
+```
+
+## Playwright Deployment Check
+
+After `npm ci`, install the managed Chromium build and its Ubuntu libraries:
+
+```bash
+npm run playwright:install:ubuntu
+```
+
+Run the read-only production checks locally on Ubuntu:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3205 npm run test:e2e:deploy
+```
+
+Or run the same deployment gate from the authorized Mac:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://192.168.1.30:3205 npm run test:e2e:deploy
+```
+
 ## Worker Heartbeat
 
 ```bash

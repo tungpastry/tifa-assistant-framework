@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright Chromium
+        run: npm run playwright:install:ubuntu
+
       - name: Audit dependencies
         run: |
           npm run audit
@@ -46,9 +49,10 @@ jobs:
       - name: Run repository checks
         run: npm run check
 
-      - name: Run API smoke tests
+      - name: Run browser and API smoke tests
         env:
           BASE_URL: http://127.0.0.1:3100
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3100
           PORT: "3100"
           TIFA_BASE_URL: http://127.0.0.1:3100
         run: |
@@ -80,6 +84,11 @@ jobs:
             exit 1
           fi
 
+          if ! npm run test:e2e; then
+            cat "${web_log}" >&2
+            exit 1
+          fi
+
           if ! npm run smoke:api; then
             cat "${web_log}" >&2
             exit 1
@@ -94,5 +103,6 @@ jobs:
             echo "- Runner: \`${RUNNER_OS}\`"
             echo "- Node: \`$(node --version 2>/dev/null || echo unavailable)\`"
             echo "- npm: \`$(npm --version 2>/dev/null || echo unavailable)\`"
+            echo "- Playwright: \`$(playwright --version 2>/dev/null || echo unavailable)\`"
             echo "- Result: \`${{ job.status }}\`"
           } >>"${GITHUB_STEP_SUMMARY}"

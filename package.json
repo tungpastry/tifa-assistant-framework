@@ -21,6 +21,12 @@
     "check:core-package": "node scripts/check-core-package-pilot.mjs",
     "cleanup:runtime": "bash scripts/cleanup-runtime.sh",
     "smoke:api": "bash scripts/smoke-api.sh",
+    "playwright:install": "playwright install chromium",
+    "playwright:install:ubuntu": "playwright install --with-deps chromium",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:deploy": "PLAYWRIGHT_DEPLOYMENT=1 playwright test tests/e2e/deployment.spec.ts --project=chromium-desktop",
     "tts:worker": "node scripts/tts-worker.mjs",
     "tts:worker:once": "node scripts/tts-worker.mjs --once",
     "audit": "npm audit",
@@ -38,6 +44,7 @@
     "react-simple-typewriter": "^5.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "19.3.0",

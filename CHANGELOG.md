@@ -4,6 +4,10 @@ All notable changes to Tifa Assistant Framework are documented here.
 
 ## [Unreleased]
 
+### Added
+- Playwright Chromium end-to-end coverage for the Tifa widget on desktop and mobile.
+- A read-only deployment check for runtime health and the Piper-only provider contract.
+
 ## [0.1.0] - 2026-09-10
 
 ### Added

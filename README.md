@@ -166,6 +166,7 @@ npm run check
 npm run audit
 npm run audit:prod
 npm run smoke:api
+npm run test:e2e
 node --check scripts/tts-worker.mjs
 npm run tts:worker:once
 ```
@@ -181,6 +182,31 @@ Optional live smoke:
 
 ```bash
 RUN_LIVE_SMOKE=1 npm run smoke:api
+```
+
+## Browser E2E
+
+Playwright `1.63.0` covers the Tifa widget in desktop and mobile Chromium. Install
+the managed browser once, then run the deterministic UI suite:
+
+```bash
+npm run playwright:install
+npm run test:e2e
+```
+
+Target an already running development or production deployment by setting its
+base URL. The deployment suite is read-only and validates health plus the
+Piper-only voice provider contract:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://192.168.1.30:3205 npm run test:e2e
+PLAYWRIGHT_BASE_URL=http://192.168.1.30:3205 npm run test:e2e:deploy
+```
+
+On Ubuntu, install Chromium and its operating-system dependencies with:
+
+```bash
+npm run playwright:install:ubuntu
 ```
 
 ## Module Boundaries
