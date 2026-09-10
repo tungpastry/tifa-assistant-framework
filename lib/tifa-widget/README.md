@@ -30,6 +30,11 @@ import {
 - Widget config/types and extension-point contracts.
 - Frontend-safe event types.
 
+`useTifaChat` accepts an optional `active` flag. It defaults to `true` for
+backward compatibility; floating launchers can pass `false` until the user
+opens the assistant so greeting audio and session persistence start only after
+an explicit interaction.
+
 ## Does Not Own
 
 - Server route handlers.

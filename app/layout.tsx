@@ -64,7 +64,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-300 bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors duration-300`}
       >
         {/* Theme provider to handle dark/light */}
         <ThemeProvider

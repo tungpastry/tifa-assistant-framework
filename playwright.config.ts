@@ -31,11 +31,19 @@ export default defineConfig({
   projects: [
     {
       name: "chromium-desktop",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "chromium-laptop",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 } },
     },
     {
       name: "chromium-mobile",
-      use: { ...devices["iPhone 13"], browserName: "chromium" },
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "chromium",
+        viewport: { width: 390, height: 844 },
+      },
     },
   ],
 });
