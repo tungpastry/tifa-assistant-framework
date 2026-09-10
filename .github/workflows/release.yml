@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-verify:
+    name: release-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Validate release version and commit
+        run: |
+          set -euo pipefail
+
+          root_version=$(node -p "require('./package.json').version")
+          core_version=$(node -p "require('./packages/core/package.json').version")
+
+          if [[ "${root_version}" != "${core_version}" ]]; then
+            echo "Root version ${root_version} does not match core version ${core_version}." >&2
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v${root_version}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package version v${root_version}." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "Release commit ${GITHUB_SHA} is not contained in origin/main." >&2
+            exit 1
+          fi
+
+          echo "PACKAGE_VERSION=${root_version}" >>"${GITHUB_ENV}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: |
+          npm run audit
+          npm run audit:prod
+
+      - name: Check TTS worker syntax
+        run: node --check scripts/tts-worker.mjs
+
+      - name: Run repository checks
+        run: npm run check
+
+      - name: Verify and pack core package
+        run: |
+          set -euo pipefail
+
+          npm pack --dry-run -w @tifa-assistant/core
+          mkdir -p release
+          npm pack -w @tifa-assistant/core --pack-destination release
+
+          archive="tifa-assistant-core-${PACKAGE_VERSION}.tgz"
+          test -s "release/${archive}"
+          (cd release && sha256sum "${archive}" >"${archive}.sha256")
+
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const version = process.env.PACKAGE_VERSION;
+          const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+          const heading = `## [${version}]`;
+          const start = changelog.indexOf(heading);
+          if (start === -1) throw new Error(`Missing ${heading} in CHANGELOG.md`);
+
+          const next = changelog.indexOf("\n## [", start + heading.length);
+          const notes = changelog.slice(start, next === -1 ? undefined : next).trim();
+          if (!notes) throw new Error(`Release notes for ${version} are empty`);
+
+          fs.writeFileSync("release/RELEASE_NOTES.md", `${notes}\n`);
+          NODE
+
+      - name: Upload release candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tifa-core-${{ github.sha }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Write release verification summary
+        if: always()
+        run: |
+          {
+            echo "## Release verification"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Ref: \`${GITHUB_REF}\`"
+            echo "- Result: \`${{ job.status }}\`"
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+  release-publish:
+    name: release-publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - release-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: tifa-core-${{ github.sha }}
+          path: release
+
+      - name: Publish GitHub Release
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            release/*.tgz \
+            release/*.sha256 \
+            --verify-tag \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release/RELEASE_NOTES.md \
+            --latest
+
+      - name: Write release publication summary
+        run: |
+          {
+            echo "## Published release"
+            echo "- Tag: \`${GITHUB_REF_NAME}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- URL: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
+          } >>"${GITHUB_STEP_SUMMARY}"

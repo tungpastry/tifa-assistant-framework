@@ -4,6 +4,8 @@ All notable changes to Tifa Assistant Framework are documented here.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-10
+
 ### Added
 - Tifa Framework Dev Console as the root page.
 - `TifaWidget` floating assistant UI.
@@ -34,7 +36,3 @@ All notable changes to Tifa Assistant Framework are documented here.
 - Removed dashboard artifact API routes and app coupling that were unrelated to the framework runtime.
 - Removed generated artifact pipeline files that were not part of the assistant framework.
 - Removed unused optional voice-provider scaffolds so local TTS is Piper-only.
-
-## [0.1.0]
-
-Initial local-first assistant framework scaffold.

@@ -1,5 +1,8 @@
 # Tifa AI
 
+[![CI](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tungpastry/tifa-assistant-framework)](https://github.com/tungpastry/tifa-assistant-framework/releases/latest)
+
 ![Tifa AI coding robot logo](public/tifa-assistant-logo.png)
 
 **One Framework, Every Assistant Experience**
@@ -160,6 +163,13 @@ npm run smoke:api
 node --check scripts/tts-worker.mjs
 npm run tts:worker:once
 ```
+
+Pull requests and pushes to `main` run the public
+[`ci-required`](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/ci.yml)
+check. Version tags run the public
+[`Release`](https://github.com/tungpastry/tifa-assistant-framework/actions/workflows/release.yml)
+workflow, which verifies and packages `@tifa-assistant/core` without publishing
+it to npm.
 
 Optional live smoke:
 

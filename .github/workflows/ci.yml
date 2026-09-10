@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-required:
+    name: ci-required
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: |
+          npm run audit
+          npm run audit:prod
+
+      - name: Check TTS worker syntax
+        run: node --check scripts/tts-worker.mjs
+
+      - name: Run repository checks
+        run: npm run check
+
+      - name: Run API smoke tests
+        env:
+          BASE_URL: http://127.0.0.1:3100
+          PORT: "3100"
+          TIFA_BASE_URL: http://127.0.0.1:3100
+        run: |
+          set -euo pipefail
+
+          web_log="${RUNNER_TEMP}/tifa-web.log"
+          npm run start >"${web_log}" 2>&1 &
+          web_pid=$!
+
+          cleanup() {
+            kill "${web_pid}" 2>/dev/null || true
+            wait "${web_pid}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in {1..30}; do
+            status=$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}/api/health" || true)
+            if [[ "${status}" == "200" || "${status}" == "503" ]]; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "${ready}" != "1" ]]; then
+            echo "Tifa web did not become ready." >&2
+            cat "${web_log}" >&2
+            exit 1
+          fi
+
+          if ! npm run smoke:api; then
+            cat "${web_log}" >&2
+            exit 1
+          fi
+
+      - name: Write CI evidence summary
+        if: always()
+        run: |
+          {
+            echo "## CI evidence"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Runner: \`${RUNNER_OS}\`"
+            echo "- Node: \`$(node --version 2>/dev/null || echo unavailable)\`"
+            echo "- npm: \`$(npm --version 2>/dev/null || echo unavailable)\`"
+            echo "- Result: \`${{ job.status }}\`"
+          } >>"${GITHUB_STEP_SUMMARY}"
