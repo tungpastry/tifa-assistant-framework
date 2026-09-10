@@ -54,8 +54,8 @@ export default function Home() {
           <div className="grid items-center gap-8 lg:grid-cols-[220px_1fr]">
             <div className="relative h-44 w-44 overflow-hidden rounded-full border border-pink-300/30 bg-black shadow-[0_0_50px_rgba(236,72,153,0.18)] sm:h-52 sm:w-52">
               <Image
-                src="/tifa-assistant-logo.png"
-                alt="Tifa Assistant Framework logo"
+                src="/tifa-assistant-mark.png"
+                alt="Tifa Assistant coding robot logo"
                 fill
                 priority
                 sizes="(min-width: 1024px) 208px, 176px"

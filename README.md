@@ -1,6 +1,6 @@
 # Tifa Assistant Framework
 
-![Tifa Assistant Framework logo](public/tifa-assistant-logo.png)
+![Tifa Assistant logo featuring a coding robot](public/tifa-assistant-logo.png)
 
 **Hey trader, how are you feeling today?**
 

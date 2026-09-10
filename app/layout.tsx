@@ -23,8 +23,16 @@ export const metadata: Metadata = {
   title: "Tifa Assistant Framework",
   description: siteDescription,
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: {
+      url: "/icon.png",
+      type: "image/png",
+      sizes: "512x512",
+    },
+    apple: {
+      url: "/icon.png",
+      type: "image/png",
+      sizes: "512x512",
+    },
   },
   openGraph: {
     title: "Tifa Assistant Framework",
@@ -32,10 +40,10 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/tifa-assistant-logo.png",
-        width: 1254,
-        height: 1254,
-        alt: "Tifa Assistant Framework logo",
+        url: "/tifa-assistant-social.png",
+        width: 1200,
+        height: 630,
+        alt: "Tifa Assistant logo featuring a coding robot",
       },
     ],
   },
@@ -43,7 +51,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tifa Assistant Framework",
     description: siteDescription,
-    images: ["/tifa-assistant-logo.png"],
+    images: ["/tifa-assistant-social.png"],
   },
 };
 
